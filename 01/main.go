@@ -1,14 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"os"
 )
 
 type Puzzle struct {
 	filename string
-	openPuzzle *os.File
+	instance *PuzzleInstance
 }
+
+type PuzzleInstance = bufio.Scanner
 
 func main() {
 	fileArg := os.Args[1:]
@@ -16,11 +20,12 @@ func main() {
 		panic("No argument given!")
 	}
 	puzzle := &Puzzle{filename: fileArg[0]}
-	cleanup := puzzle.se()
+	cleanup := puzzle.setupPuzzle()
 	defer cleanup()
+	puzzle.dumpContents()
 }
 
-func (p Puzzle) setupPuzzle() func() {
+func (p *Puzzle) setupPuzzle() func() {
 	if p.filename == "" {
 		panic("no file given!")
 	}
@@ -28,7 +33,19 @@ func (p Puzzle) setupPuzzle() func() {
 	if err != nil {
 		panic(fmt.Sprintf("could not open file!: %v", err))
 	}
-	p.openPuzzle = file
+	p.instance = instantiatePuzzle(file)
 	return func() { file.Close() }
 }
 
+func instantiatePuzzle(file *os.File) *PuzzleInstance {
+	return bufio.NewScanner(file)
+}
+
+func (p *Puzzle) dumpContents() {
+	if p.instance == nil {
+		log.Fatal("puzzle is not instantiated!")
+	}
+	for p.instance.Scan() {
+		fmt.Println(p.instance.Text())
+	}
+}
