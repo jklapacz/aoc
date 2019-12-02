@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 )
 
 type Puzzle struct {
@@ -22,7 +23,8 @@ func main() {
 	puzzle := &Puzzle{filename: fileArg[0]}
 	cleanup := puzzle.setupPuzzle()
 	defer cleanup()
-	puzzle.dumpContents()
+
+	puzzle.Solve()
 }
 
 func (p *Puzzle) setupPuzzle() func() {
@@ -41,6 +43,7 @@ func instantiatePuzzle(file *os.File) *PuzzleInstance {
 	return bufio.NewScanner(file)
 }
 
+// mostly for debugging, iterate through the file
 func (p *Puzzle) dumpContents() {
 	if p.instance == nil {
 		log.Fatal("puzzle is not instantiated!")
@@ -49,3 +52,30 @@ func (p *Puzzle) dumpContents() {
 		fmt.Println(p.instance.Text())
 	}
 }
+
+type moduleWeight = int
+type fuelCost = int
+
+func (p *Puzzle) Solve() {
+	fuelSum := 0
+	for p.instance.Scan() {
+		currentInput := p.instance.Text()
+		weight := turnInputIntoWeight(currentInput)
+		fuelSum += calculateFuelCost(weight)
+	}
+	fmt.Println("=== answer: ", fuelSum)
+}
+
+func turnInputIntoWeight(input string) moduleWeight {
+	weight, err := strconv.ParseInt(input, 10, 32)
+	if err != nil {
+		log.Fatal("invalid module weight input", err)
+	}
+
+	return moduleWeight(weight)
+}
+
+func calculateFuelCost(m moduleWeight) fuelCost {
+	return (m / 3) - 2
+}
+
