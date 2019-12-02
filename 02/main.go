@@ -17,28 +17,58 @@ const (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) < 3 {
 		log.Fatal("argument needed")
 	}
 	filename := os.Args[1]
+	part := os.Args[2]
+	if part == "2" {
+		partTwo(filename)
+		return
+	}
 	puzzle := &aoc.Puzzle{Filename:filename}
 	cleanup := puzzle.SetupPuzzle()
 	defer cleanup()
-	solve(puzzle)
+	solve(puzzle, 12, 2)
+}
+
+func partTwo(filename string) {
+	desiredOutput := 19690720
+	startNoun := 0
+	startVerb := 0
+	for noun := startNoun; noun <= 99; noun++ {
+		fmt.Println("Searching...")
+		for verb := startVerb; verb <= 99; verb++ {
+			output := computeOutput(filename, noun, verb)
+			if output == desiredOutput {
+				fmt.Println("==== desired output found!", noun, verb)
+				return
+			}
+			fmt.Printf("\t[%v] - [%v] inconclusive\n", noun, verb)
+		}
+	}
+	fmt.Println("search space exhausted...")
+}
+
+func computeOutput(filename string, noun, verb int) int {
+	puzzle := &aoc.Puzzle{Filename:filename}
+	cleanup := puzzle.SetupPuzzle()
+	defer cleanup()
+	return solve(puzzle, noun, verb)
 }
 
 type command = *bytes.Buffer
 
 
-func solve(p *aoc.Puzzle) {
+func solve(p *aoc.Puzzle, noun, verb int) int {
 	for p.Instance.Scan() {
 		cmd := bytes.NewBufferString(p.Instance.Text())
-		execute(cmd)
+		return execute(cmd, noun, verb)
 	}
-	fmt.Println("Solving!")
+	return -1
 }
 
-func execute(cmd command) {
+func execute(cmd command, noun, verb int) int {
 	rawOperations := strings.Split(cmd.String(), ",")
 	operations := make([]int, len(rawOperations))
 	for idx, op := range rawOperations {
@@ -48,6 +78,8 @@ func execute(cmd command) {
 		}
 		operations[idx] = int(parsedVal)
 	}
+	operations[1] = noun
+	operations[2] = verb
 	startingIdx := 0
 	offsetIncrement := 4
 	for curIdx := startingIdx; curIdx + offsetIncrement < len(operations); curIdx += offsetIncrement {
@@ -55,6 +87,7 @@ func execute(cmd command) {
 		performOperation(operations, curIdx)
 	}
 	fmt.Println("Output", operations)
+	return operations[0]
 }
 
 func performOperation(opcodes []int, opcodeBit int) {
