@@ -61,7 +61,7 @@ func (p *Puzzle) Solve() {
 	for p.instance.Scan() {
 		currentInput := p.instance.Text()
 		weight := turnInputIntoWeight(currentInput)
-		fuelSum += calculateFuelCost(weight)
+		fuelSum += calculateFuelCostCost(weight)
 	}
 	fmt.Println("=== answer: ", fuelSum)
 }
@@ -77,5 +77,14 @@ func turnInputIntoWeight(input string) moduleWeight {
 
 func calculateFuelCost(m moduleWeight) fuelCost {
 	return (m / 3) - 2
+}
+
+func calculateFuelCostCost(m moduleWeight) fuelCost {
+	calculatedCost := calculateFuelCost(m)
+	if calculatedCost <= 0 {
+		return 0
+	}
+
+	return calculatedCost + calculateFuelCostCost(calculatedCost)
 }
 
