@@ -14,10 +14,6 @@ type Puzzle struct {
 
 type Instance = bufio.Scanner
 
-func Hello() {
-	fmt.Println("Hello")
-}
-
 func (p *Puzzle) SetupPuzzle() func() {
 	if p.Filename == "" {
 		panic("no file given!")
@@ -35,7 +31,7 @@ func instantiatePuzzle(file *os.File) *Instance {
 }
 
 // mostly for debugging, iterate through the file
-func (p *Puzzle) dumpContents() {
+func (p *Puzzle) DumpContents() {
 	if p.Instance == nil {
 		log.Fatal("puzzle is not instantiated!")
 	}
@@ -43,4 +39,3 @@ func (p *Puzzle) dumpContents() {
 		fmt.Println(p.Instance.Text())
 	}
 }
-
