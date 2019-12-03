@@ -33,11 +33,9 @@ func TestFindClosest(t *testing.T) {
 }
 
 func TestSolve(t *testing.T) {
-	//testFirst := `R8,U5,L5,D3
-//U7,R6,D4,L4`
-	testFirst := `R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51
-U98,R91,D20,R16,D67,R40,U7,R15,U6,R7`
-	solnFirst := 135
+	testFirst := `R8,U5,L5,D3
+U7,R6,D4,L4`
+	solnFirst := 6
 	actualFirst := day03.Solve(strings.NewReader(testFirst))
 	if solnFirst != actualFirst {
 		t.Errorf("solution is incorrect! expected: %v actual %v", solnFirst, actualFirst)
@@ -83,6 +81,17 @@ func TestIntersection(t *testing.T) {
 				day03.Point{2, 3},
 			},
 			intersection: day03.Point{3, 3},
+		},
+		{
+			segmentA: day03.Segment{
+				day03.Point{0,0},
+				day03.Point{4 ,0},
+			},
+			segmentB : day03.Segment{
+				day03.Point{2, 0},
+				day03.Point{2, 4},
+			},
+			intersection: day03.Point{2, 0},
 		},
 	}
 	for _, s := range scenarios {

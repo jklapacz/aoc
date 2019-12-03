@@ -56,8 +56,8 @@ func getCrossings(wires ...WirePath) []*Point {
 	for _, wirePoint := range wires[1] {
 		wireSegment := Segment{wirePrev, wirePoint}
 		for _, truePoint := range truthWire {
-			fmt.Println("Current Wire: ", wirePoint, "Current truth: ", truePoint)
 			truthSegment := Segment{truthPrev, truePoint}
+			fmt.Println("Current Wire: ", wireSegment, "Current truth: ", truthSegment)
 			intersectionPoint := Intersection(wireSegment, truthSegment)
 			if intersectionPoint != nil {
 				fmt.Println("Intersection point: ", intersectionPoint)
@@ -110,6 +110,14 @@ func Intersection(a, b Segment) *Point {
 	c2 := a2*x3 + b2*y3
 
 	det := a1*b2 - a2*b1
+
+	isWithin := func(xCoord, yCoord float64) bool {
+		return xCoord >= interval1[0] && xCoord <= interval1[1] &&
+			xCoord >= interval2[0] && xCoord <= interval2[1] &&
+			yCoord >= intervaly1[0] && yCoord <= intervaly1[1] &&
+			yCoord >= intervaly2[0] && yCoord <= intervaly2[1]
+	}
+
 	if det == 0 {
 		// parallel lines
 		return nil
@@ -118,10 +126,7 @@ func Intersection(a, b Segment) *Point {
 	x := (b2*c1 - b1*c2)/det
 	y := (a1*c2 - a2*c1)/det
 
-	if x >= interval1[0] && x <= interval1[1] &&
-		x >= interval2[0] && x <= interval2[1] &&
-		y >= intervaly1[0] && y <= intervaly1[1] &&
-		y >= intervaly2[0] && y <= intervaly2[1] {
+	if isWithin(x, y) {
 		return &Point{int(x), int(y)}
 	}
 	return nil
