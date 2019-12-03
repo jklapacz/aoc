@@ -58,10 +58,12 @@ func getCrossings(wires ...WirePath) []*Point {
 		for _, truePoint := range truthWire {
 			truthSegment := Segment{truthPrev, truePoint}
 			fmt.Println("Current Wire: ", wireSegment, "Current truth: ", truthSegment)
-			intersectionPoint := Intersection(wireSegment, truthSegment)
-			if intersectionPoint != nil {
-				fmt.Println("Intersection point: ", intersectionPoint)
-				crossings = append(crossings, intersectionPoint)
+			intersectionPoints := Intersection(wireSegment, truthSegment)
+			if intersectionPoints != nil && len(intersectionPoints) > 0 {
+				for _, i := range intersectionPoints {
+					fmt.Println("Intersection point: ", *i)
+				}
+				crossings = append(crossings, intersectionPoints...)
 			}
 			truthPrev = truePoint
 		}
@@ -74,7 +76,7 @@ type Segment struct {
 	Start, End Point
 }
 
-func Intersection(a, b Segment) *Point {
+func Intersection(a, b Segment) []*Point {
 	x1 := float64(a.Start.X)
 	x2 := float64(a.End.X)
 	x3 := float64(b.Start.X)
@@ -103,10 +105,12 @@ func Intersection(a, b Segment) *Point {
 
 	a1 := (y2 - y1)
 	b1 := (x1 - x2)
+	run1 := (x2 - x1)
 	c1 := a1*x1 + b1*y1
 
 	a2 := (y4 - y3)
 	b2 := (x3 - x4)
+	run2 := (x4 - x3)
 	c2 := a2*x3 + b2*y3
 
 	det := a1*b2 - a2*b1
@@ -118,19 +122,97 @@ func Intersection(a, b Segment) *Point {
 			yCoord >= intervaly2[0] && yCoord <= intervaly2[1]
 	}
 
+	parallelPoints := func() []*Point {
+		// line goes vertical
+		var startPoint, endPoint float64
+		var points []*Point
+		if x1 == x2 && x1 == x3 && x3 == x4 {
+			if math.Min(intervaly1[0], intervaly2[0]) == intervaly1[0] {
+				// a is lower
+				startPoint = intervaly2[0]
+			} else {
+				startPoint = intervaly1[0]
+			}
+			if math.Max(intervaly1[1], intervaly2[1]) == intervaly1[1] {
+				endPoint = intervaly2[1]
+			} else {
+				endPoint = intervaly1[1]
+			}
+			for yIdx := startPoint; yIdx <= endPoint; yIdx++ {
+				points = append(points, &Point{int(x1), int(yIdx)})
+			}
+		} else if y1 == y2 && y1 == y3 && y3 == y4 {
+			// moving horizontally
+			if math.Min(interval1[0], interval2[0]) == interval1[0] {
+				// a is lower
+				startPoint = interval2[0]
+			} else {
+				startPoint = interval1[0]
+			}
+			if math.Max(interval1[1], interval2[1]) == interval1[1] {
+				endPoint = interval2[1]
+			} else {
+				endPoint = interval1[1]
+			}
+			for xIdx := startPoint; xIdx <= endPoint; xIdx++ {
+				points = append(points, &Point{int(xIdx), int(y1)})
+			}
+		} else if b1 == b2 && c1 == c2 {
+			var startX, startY, endX, endY float64
+			if math.Min(interval1[0], interval2[0]) == interval1[0] {
+				// a is lower
+				startX = interval2[0]
+			} else {
+				startX = interval1[0]
+			}
+			if math.Max(interval1[1], interval2[1]) == interval1[1] {
+				endX = interval2[1]
+			} else {
+				endX = interval1[1]
+			}
+			if math.Min(intervaly1[0], intervaly2[0]) == intervaly1[0] {
+				// a is lower
+				startY = intervaly2[0]
+			} else {
+				startY = intervaly1[0]
+			}
+			if math.Max(intervaly1[1], intervaly2[1]) == intervaly1[1] {
+				endY = intervaly2[1]
+			} else {
+				endY = intervaly1[1]
+			}
+			fmt.Println("Parallel test: ", run1, run2, startX, startY, endX, endY, a1, a2, b1, b2, c1, c2)
+			for xIdx, yIdx := startX, startY; xIdx <= endX && yIdx <= endY; xIdx, yIdx = xIdx+1, yIdx + (a1/run1) {
+				if xIdx == 0 && yIdx == 0 {
+					continue
+				}
+				if isWithin(xIdx, yIdx) {
+					points = append(points, &Point{int(xIdx), int(yIdx)})
+				}
+				fmt.Println("now checking", xIdx, yIdx, isWithin(xIdx, yIdx))
+			}
+
+			fmt.Println("Parallel test: ", run1, run2, startX, startY, endX, endY, a1, a2, b1, b2, c1, c2)
+			fmt.Printf("oops, b is: %v slope is: %v and %v, x1 is %v x2 is %v", b1, float64(a1/run1), float64(a2/run2), x1, x2)
+		}
+		return points
+	}
+
 	if det == 0 {
+		return parallelPoints()
 		// parallel lines
-		return nil
 	}
 
 	x := (b2*c1 - b1*c2)/det
 	y := (a1*c2 - a2*c1)/det
 
 	if isWithin(x, y) {
-		return &Point{int(x), int(y)}
+		return []*Point{{int(x), int(y)}}
 	}
 	return nil
 }
+
+
 
 func stringToPath(input string) WirePath {
 	movements := strings.Split(input, ",")
@@ -180,6 +262,9 @@ func FindClosest(origin Point, candidates ...*Point) int {
 	}
 	currentDistance := int(^uint(0) >> 1)
 	for _, potential := range candidates {
+		if *potential == origin {
+			continue
+		}
 		distance := Manhattan(origin, *potential)
 		if distance < currentDistance {
 			currentDistance = distance

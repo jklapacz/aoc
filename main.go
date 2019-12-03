@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/jklapacz/aoc/day03"
 	"github.com/jklapacz/aoc/puzzle"
 )
@@ -14,5 +15,5 @@ func solveDay03() {
 	currentPuzzle := &puzzle.Puzzle{Filename:filename}
 	cleanup := currentPuzzle.Setup()
 	defer cleanup()
-	day03.Solve(currentPuzzle)
+	fmt.Println("Distance: ", day03.Solve(currentPuzzle))
 }
