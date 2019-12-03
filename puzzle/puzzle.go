@@ -8,6 +8,7 @@ import (
 )
 
 type Puzzle struct {
+	*os.File
 	Filename string
 	Instance *Instance
 }
@@ -27,7 +28,8 @@ func (p *Puzzle) SetupPuzzle() func() {
 		panic(fmt.Sprintf("could not open file!: %v", err))
 	}
 	p.Instance = instantiatePuzzle(file)
-	return func() { file.Close() }
+	p.File = file
+	return func() { p.File.Close() }
 }
 
 func instantiatePuzzle(file *os.File) *Instance {

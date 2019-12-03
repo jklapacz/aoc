@@ -6,6 +6,8 @@ import (
 	"io"
 )
 
+
+
 func Solve(input io.Reader) int {
 	scanner := bufio.NewScanner(input)
 	scanner.Split(bufio.ScanLines)
