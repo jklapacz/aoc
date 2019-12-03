@@ -14,6 +14,10 @@ type Puzzle struct {
 
 type Instance = bufio.Scanner
 
+func (p *Puzzle) Setup() func() {
+	return p.SetupPuzzle()
+}
+
 func (p *Puzzle) SetupPuzzle() func() {
 	if p.Filename == "" {
 		panic("no file given!")
