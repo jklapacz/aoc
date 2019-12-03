@@ -41,7 +41,31 @@ func Solve(input io.Reader) int {
 		}
 		count++
 	}
-	return 1
+	return -1
+}
+func SolvePart2(input io.Reader) int {
+	scanner := bufio.NewScanner(input)
+	scanner.Split(bufio.ScanLines)
+	wires := make([]WirePath, 2)
+	count := 0
+	for scanner.Scan() {
+		// get the index, every 2 lines are a pair of wires
+		wireIdx := int(math.Mod(float64(count), float64(2)))
+		wirePath := scanner.Text()
+		wires[wireIdx] = stringToPath(wirePath)
+		fmt.Println("Line ", count, wirePath, wires[wireIdx])
+
+		if wireIdx == 1 {
+			// we can check for wire crossings
+			wireCrossings := getCrossings(wires...)
+			for _, crossing := range wireCrossings {
+				fmt.Println("Crossings!!!", *crossing)
+			}
+			return FindCheapest(Point{0, 0}, wires, wireCrossings[1:]...)
+		}
+		count++
+	}
+	return -1
 }
 
 func getCrossings(wires ...WirePath) []*Point {
@@ -271,4 +295,72 @@ func FindClosest(origin Point, candidates ...*Point) int {
 		}
 	}
 	return currentDistance
+}
+
+func FindCheapest(origin Point, paths []WirePath,candidates ...*Point) int {
+	if len(candidates) == 0 || len(paths) != 2 {
+		return -1
+	}
+	currentCost := int(^uint(0) >> 1 )
+	fmt.Printf("Calculating cost for %v intersections\n", len(candidates))
+	for _, potential := range candidates {
+		if *potential == origin {
+			continue
+		}
+		fmt.Println("Calculating cost for intersection: ", potential)
+		cost := calculatePathCost(paths[0], potential) + calculatePathCost(paths[1], potential)
+		fmt.Println("totalCost: ", cost)
+		if cost < currentCost {
+			currentCost = cost
+		}
+	}
+	return currentCost
+}
+
+func calculatePathCost(path WirePath, intersection *Point) int {
+	fmt.Println("calculating path cost")
+	pathCost := 0
+	previous := Point{0,0}
+	for _, step := range path {
+		if onPath(previous, step, *intersection) {
+			fmt.Println("Ixn on path!")
+			cost := partialCost(previous, step, intersection)
+			fmt.Println("Returning cost", pathCost, cost)
+			pathCost += partialCost(previous, step, intersection)
+			break
+		}
+		fmt.Println("Ixn not on path!")
+		cost := partialCost(previous, step, nil)
+		fmt.Println("calculated cost: ", cost)
+		pathCost += cost
+		previous = step
+	}
+	fmt.Println("Path cost is: ", pathCost)
+	return pathCost
+}
+
+func onPath(start, end, intersection Point) bool {
+	fmt.Printf("Checking if %v is between %v and %v\n", intersection, start, end)
+	if start.X == end.X {
+		// moving vertically
+		min := int(math.Min(float64(start.Y), float64(end.Y)))
+		max := int(math.Max(float64(start.Y), float64(end.Y)))
+		return intersection.X == start.X &&
+			intersection.Y >= min &&
+			intersection.Y <= max
+	} else {
+		// moving horizontally
+		min := int(math.Min(float64(start.X), float64(end.X)))
+		max := int(math.Max(float64(start.X), float64(end.X)))
+		return intersection.Y == start.Y &&
+			intersection.X >= min &&
+			intersection.X <= max
+	}
+}
+
+func partialCost(start,end Point, intersection *Point) int {
+	if intersection == nil {
+		return Manhattan(start, end)
+	}
+	return Manhattan(start, *intersection)
 }

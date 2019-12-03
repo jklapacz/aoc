@@ -15,5 +15,6 @@ func solveDay03() {
 	currentPuzzle := &puzzle.Puzzle{Filename:filename}
 	cleanup := currentPuzzle.Setup()
 	defer cleanup()
-	fmt.Println("Distance: ", day03.Solve(currentPuzzle))
+	//fmt.Println("Distance: ", day03.Solve(currentPuzzle))
+	fmt.Println("Cost : ", day03.SolvePart2(currentPuzzle))
 }
