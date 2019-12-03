@@ -1,7 +1,7 @@
-package aoc_test
+package puzzle_test
 
 import (
-	"github.com/jklapacz/aoc"
+	"github.com/jklapacz/aoc/puzzle"
 	"testing"
 )
 
@@ -10,7 +10,7 @@ const (
 )
 
 func TestPuzzle_Setup(t *testing.T) {
-	testPuzzle := &aoc.Puzzle{Filename: InputFile}
+	testPuzzle := &puzzle.Puzzle{Filename: InputFile}
 	testPuzzle.Setup()
 	t.Log("puzzle setup completed without failure")
 	testPuzzle.DumpContents()
@@ -23,6 +23,6 @@ func TestPuzzle_SetupBadInput(t *testing.T) {
 			t.Errorf("The code did not panic!")
 		}
 	}()
-	testPuzzle := &aoc.Puzzle{}
+	testPuzzle := &puzzle.Puzzle{}
 	testPuzzle.Setup()
 }

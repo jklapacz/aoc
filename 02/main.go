@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/jklapacz/aoc"
+	aoc "github.com/jklapacz/aoc/puzzle"
 	"log"
 	"os"
 	"strconv"
