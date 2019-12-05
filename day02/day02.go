@@ -1,4 +1,4 @@
-package main
+package day02
 
 import (
 	"bytes"
@@ -10,13 +10,17 @@ import (
 	"strings"
 )
 
+type Opcode = int
 const (
-	OpcodeAdd = 1
-	OpcodeMultiply = 2
-	OpcodeErr = 99
+	OpcodeAdd Opcode = iota + 1
+	OpcodeMultiply
+	OpcodeSave
+	OpcodeOutput
+	OpcodeUnknown Opcode = 98
+	OpcodeErr Opcode = 99
 )
 
-func main() {
+func SolveDay02() {
 	if len(os.Args) < 3 {
 		log.Fatal("argument needed")
 	}
@@ -63,12 +67,12 @@ type command = *bytes.Buffer
 func solve(p *aoc.Puzzle, noun, verb int) int {
 	for p.Instance.Scan() {
 		cmd := bytes.NewBufferString(p.Instance.Text())
-		return execute(cmd, noun, verb)
+		return ExecuteCommand(cmd, noun, verb)
 	}
 	return -1
 }
 
-func execute(cmd command, noun, verb int) int {
+func ExecuteCommand(cmd command, noun, verb int) int {
 	rawOperations := strings.Split(cmd.String(), ",")
 	operations := make([]int, len(rawOperations))
 	for idx, op := range rawOperations {
@@ -78,8 +82,12 @@ func execute(cmd command, noun, verb int) int {
 		}
 		operations[idx] = int(parsedVal)
 	}
-	operations[1] = noun
-	operations[2] = verb
+	if noun >= 0 {
+		operations[1] = noun
+	}
+	if verb >= 0 {
+		operations[2] = verb
+	}
 	startingIdx := 0
 	offsetIncrement := 4
 	for curIdx := startingIdx; curIdx + offsetIncrement < len(operations); curIdx += offsetIncrement {
@@ -99,7 +107,7 @@ func performOperation(opcodes []int, opcodeBit int) {
 	case OpcodeErr:
 		fmt.Println("Error opcode found")
 	default:
-		log.Fatal("Unexpected error")
+		log.Fatal("unknown opcode")
 	}
 }
 
