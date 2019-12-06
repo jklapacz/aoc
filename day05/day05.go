@@ -13,6 +13,7 @@ type Operation struct {
 	encoded int
 	output int
 	params []int
+	nextInstruction int
 }
 
 var OpLengths = map[day02.Opcode]int{
@@ -20,6 +21,10 @@ var OpLengths = map[day02.Opcode]int{
 	day02.OpcodeMultiply: 4,
 	day02.OpcodeSave: 2,
 	day02.OpcodeOutput: 2,
+	day02.OpcodeJIT: 3,
+	day02.OpcodeJIF: 3,
+	day02.OpcodeLT: 4,
+	day02.OpcodeEq: 4,
 }
 
 func ParseOperation(opcodes []int, instructionIdx int) Operation{
@@ -30,18 +35,34 @@ func ParseOperation(opcodes []int, instructionIdx int) Operation{
 	case day02.OpcodeAdd:
 		op.output = opcodes[instructionIdx+3]
 		op.params = opcodes[instructionIdx+1:instructionIdx+4]
+		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeMultiply:
 		op.output = opcodes[instructionIdx+3]
 		op.params = opcodes[instructionIdx+1:instructionIdx+4]
+		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeOutput:
 		op.output = -1
 		op.params = opcodes[instructionIdx+1:instructionIdx+2]
+		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeSave:
 		op.params= opcodes[instructionIdx+1:instructionIdx+2]
+		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+	case day02.OpcodeJIT:
+		op.params= opcodes[instructionIdx+1:instructionIdx+3]
+		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+	case day02.OpcodeJIF:
+		op.params= opcodes[instructionIdx+1:instructionIdx+3]
+		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+	case day02.OpcodeLT:
+		op.params = opcodes[instructionIdx+1:instructionIdx+4]
+		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+	case day02.OpcodeEq:
+		op.params = opcodes[instructionIdx+1:instructionIdx+4]
+		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeErr:
 		fmt.Println("\t== failing gracefully")
 	default:
-		log.Fatal("unknown opcode")
+		log.Fatal("unknown opcode", op.opcode)
 	}
 	return op
 }
@@ -52,40 +73,46 @@ func decodeOp(encoded int) day02.Opcode {
 	if tens == 9 && ones == 9 {
 		return day02.OpcodeErr
 	}
-	if ones < 1 || ones > 4 {
+	if ones < 1 || ones > 8 {
 		return day02.OpcodeUnknown
 	}
 	return ones
 }
 
-func RunComputer(input string) {
+func RunComputer(input string, inputVal int) int {
 	ops := convertRawInput(input)
 	instructionIdx := 0
+	var output int
 	for {
 		log.Println("\t== ", instructionIdx)
 		currentOperation := ParseOperation(ops, instructionIdx)
 		if currentOperation.opcode == day02.OpcodeErr {
-			log.Fatal("Termination sequence activated")
+			return output
 		}
-		performOperation(ops, currentOperation, 1)
+		outputMaybe, next := performOperation(ops, currentOperation, inputVal)
+		if outputMaybe != nil {
+			output = *outputMaybe
+		}
 		//fmt.Println("== compute loop", currentOperation, instrOffset)
-		instructionIdx += OpLengths[currentOperation.opcode]
+		fmt.Println("\tnext destination:", currentOperation.nextInstruction)
+
+		instructionIdx = next
 	}
+	return output
 }
 
-func performOperation(instructions []int, op Operation, input int) {
+func performOperation(instructions []int, op Operation, input int) (*int, int) {
 	immediateA := nthdigit(op.encoded, 2)
 	immediateB := nthdigit(op.encoded, 3)
 
-	//fmt.Printf("\t====Immediate settings: a: %v b: %v c: %v\n", immediateA, immediateB, immediateC)
+	fmt.Printf("\t====Immediate settings: a: %v b: %v \n", immediateA, immediateB)
 
 	var paramA, paramB int
 	if immediateA == 1 {
-		//fmt.Println("!")
-		paramA = op.params[0]
+		fmt.Println("!")
 		paramA = op.params[0]
 	} else {
-		//fmt.Println("!!!")
+		fmt.Println("!!!")
 		paramA = instructions[op.params[0]]
 	}
 
@@ -97,30 +124,50 @@ func performOperation(instructions []int, op Operation, input int) {
 		}
 	}
 
-	//fmt.Printf("\t====Params: a: %v b: %v c: %v\n", paramA, paramB, paramC)
+	//fmt.Printf("\t====Params: a: %v b: %v c: %v\n", paramA, paramB)
 	//fmt.Printf("\t====op params: %v\n", op.params)
 	//fmt.Println("=== running command: ", op, instructions)
 
 	switch op.opcode {
 	case day02.OpcodeAdd:
-		if len(op.params) < 3 {
-			fmt.Println("bad input!")
-			return
-		}
 		instructions[op.params[2]] = paramA + paramB
 	case day02.OpcodeMultiply:
-		if len(op.params) < 3 {
-			fmt.Println("bad input!")
-			return
-		}
 		instructions[op.params[2]] = paramA * paramB
 	case day02.OpcodeSave:
 		instructions[op.params[0]] = input
+	case day02.OpcodeJIT:
+		log.Printf("\t====Jumping to %v if true! %v\n", paramB, paramA)
+		if paramA != 0 {
+			op.nextInstruction = paramB
+		}
+	case day02.OpcodeJIF:
+		log.Printf("\t====Jumping to %v if false! %v\n", paramB, paramA)
+		if paramA == 0 {
+			op.nextInstruction = paramB
+			fmt.Println("\t\t false!", op)
+		}
+	case day02.OpcodeLT:
+		if paramA < paramB {
+			instructions[op.params[2]] = 1
+		} else {
+			instructions[op.params[2]] = 0
+		}
+	case day02.OpcodeEq:
+		if paramA == paramB {
+			instructions[op.params[2]] = 1
+		} else {
+			instructions[op.params[2]] = 0
+		}
 	case day02.OpcodeOutput:
-		fmt.Println("Output of print command: ", instructions[op.params[0]])
+		fmt.Println("aaa", paramA)
+
+		fmt.Println("Output of print command: ", paramA)//instructions[op.params[0]])
+		return &paramA, op.nextInstruction
+		//return &instructions[op.params[0]], op.nextInstruction
 	default:
 		log.Fatal("Unsupported opcode!")
 	}
+	return nil, op.nextInstruction
 }
 
 func nthdigit(x, n int) int {

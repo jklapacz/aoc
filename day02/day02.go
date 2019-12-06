@@ -16,9 +16,20 @@ const (
 	OpcodeMultiply
 	OpcodeSave
 	OpcodeOutput
+	OpcodeJIT
+	OpcodeJIF
+	OpcodeLT
+	OpcodeEq
 	OpcodeUnknown Opcode = 98
 	OpcodeErr Opcode = 99
 )
+
+
+//Opcode 5 is jump-if-true: if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
+//Opcode 6 is jump-if-false: if the first parameter is zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
+//Opcode 7 is less than: if the first parameter is less than the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
+//Opcode 8 is equals: if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
+
 
 func SolveDay02() {
 	if len(os.Args) < 3 {
