@@ -7,17 +7,71 @@ import (
 	"strings"
 )
 
-type Operation struct {
-	opcode          Opcode
-	encoded         int
-	output          int
-	params          []int
-	nextInstruction int
+type IO struct {
+	data []int
 }
 
-func ParseOperation(opcodes []int, instructionIdx int) Operation {
+type memoryAddress int
+
+type Computer struct {
+	Program         *IO
+	UserInput       int
+	functionPointer memoryAddress
+	output          int
+}
+
+func CreateComputer(input string) *Computer {
+	programData := &IO{convertRawInput(input)}
+	c := &Computer{Program: programData}
+	return c
+}
+
+// RunProgram runs the computer and returns the output
+func (c *Computer) RunProgram() int {
+	ops := c.Program.data
+	inputVal := c.UserInput
+	var output int
+	for {
+		currentOperation := c.getCurrentOperation()
+		if currentOperation.opcode == OpcodeErr {
+			return output
+		}
+		outputMaybe, next := performOperation(ops, currentOperation, inputVal)
+		if outputMaybe != nil {
+			output = *outputMaybe
+		}
+		fmt.Println("\tnext destination:", currentOperation.nextInstruction)
+
+		c.functionPointer = memoryAddress(next)
+	}
+	return output
+}
+
+func (c *Computer) GetUserInput(input int) {
+	c.UserInput = input
+}
+
+func (io *IO) store(value, target int) {
+	if target >= 0 && target <= len(io.data) {
+		io.data[target] = value
+	}
+}
+
+func (io *IO) read(target int) int {
+	if target >= 0 && target <= len(io.data) {
+		return io.data[target]
+	}
+	log.Fatal("Reading out of bounds data at index: ", target)
+	return 0
+}
+
+func (c *Computer) getCurrentOperation() Operation {
+	return ParseOperation(c.Program.data, c.functionPointer)
+}
+
+func ParseOperation(opcodes []int, address memoryAddress) Operation {
+	instructionIdx := int(address)
 	encodedOp := opcodes[instructionIdx]
-	//fmt.Println("parsing operation at ", instructionIdx, encodedOp)
 	op := Operation{opcode: Decode(encodedOp), encoded: encodedOp}
 	switch op.opcode {
 	case OpcodeAdd:
@@ -55,33 +109,9 @@ func ParseOperation(opcodes []int, instructionIdx int) Operation {
 	return op
 }
 
-func RunComputer(input string, inputVal int) int {
-	ops := convertRawInput(input)
-	instructionIdx := 0
-	var output int
-	for {
-		log.Println("\t== ", instructionIdx)
-		currentOperation := ParseOperation(ops, instructionIdx)
-		if currentOperation.opcode == OpcodeErr {
-			return output
-		}
-		outputMaybe, next := performOperation(ops, currentOperation, inputVal)
-		if outputMaybe != nil {
-			output = *outputMaybe
-		}
-		//fmt.Println("== compute loop", currentOperation, instrOffset)
-		fmt.Println("\tnext destination:", currentOperation.nextInstruction)
-
-		instructionIdx = next
-	}
-	return output
-}
-
 func performOperation(instructions []int, op Operation, input int) (*int, int) {
 	immediateA := nthdigit(op.encoded, 2)
 	immediateB := nthdigit(op.encoded, 3)
-
-	fmt.Printf("\t====Immediate settings: a: %v b: %v \n", immediateA, immediateB)
 
 	var paramA, paramB int
 	if immediateA == 1 {
@@ -99,10 +129,6 @@ func performOperation(instructions []int, op Operation, input int) (*int, int) {
 			paramB = instructions[op.params[1]]
 		}
 	}
-
-	//fmt.Printf("\t====Params: a: %v b: %v c: %v\n", paramA, paramB)
-	//fmt.Printf("\t====op params: %v\n", op.params)
-	//fmt.Println("=== running command: ", op, instructions)
 
 	switch op.opcode {
 	case OpcodeAdd:

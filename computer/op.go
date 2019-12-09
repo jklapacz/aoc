@@ -45,3 +45,11 @@ func nthdigit(x, n int) int {
 	powersof10 := []int{1, 10, 100, 1000, 10000}
 	return ((x / powersof10[n]) % 10)
 }
+
+type Operation struct {
+	opcode          Opcode
+	encoded         int
+	output          int
+	params          []int
+	nextInstruction int
+}
