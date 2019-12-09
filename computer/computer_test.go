@@ -1,9 +1,9 @@
-package day05_test
+package computer_test
 
 import (
 	"testing"
 
-	"github.com/jklapacz/aoc/day05"
+	day05 "github.com/jklapacz/aoc/computer"
 	"github.com/stretchr/testify/assert"
 )
 
