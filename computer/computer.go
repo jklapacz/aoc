@@ -14,17 +14,22 @@ type IO struct {
 type memoryAddress int
 
 type Computer struct {
-	Program         *IO
-	UserInput       []int
-	functionPointer *memoryAddress
-	output          int
+	Program          *IO
+	UserInput        []int
+	UserInputStreams *UserIO
+	functionPointer  *memoryAddress
+	output           int
 }
 
-func CreateComputer(input string) *Computer {
+func CreateComputer(input string, userInput, userOutput chan int) *Computer {
 	programData := &IO{convertRawInput(input)}
 	startAddress := memoryAddress(0)
-	c := &Computer{Program: programData, UserInput: []int{}, functionPointer: &startAddress}
-	return c
+	return &Computer{
+		Program:          programData,
+		UserInput:        []int{},
+		functionPointer:  &startAddress,
+		UserInputStreams: InitIO(userInput, userOutput),
+	}
 }
 
 // RunProgram runs the computer and returns the output
