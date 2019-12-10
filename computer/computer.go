@@ -15,40 +15,49 @@ type memoryAddress int
 
 type Computer struct {
 	Program         *IO
-	UserInput       int
-	functionPointer memoryAddress
+	UserInput       []int
+	functionPointer *memoryAddress
 	output          int
 }
 
 func CreateComputer(input string) *Computer {
 	programData := &IO{convertRawInput(input)}
-	c := &Computer{Program: programData}
+	startAddress := memoryAddress(0)
+	c := &Computer{Program: programData, UserInput: []int{}, functionPointer: &startAddress}
 	return c
 }
 
 // RunProgram runs the computer and returns the output
 func (c *Computer) RunProgram() int {
-	ops := c.Program.data
-	inputVal := c.UserInput
-	var output int
 	for {
 		currentOperation := c.getCurrentOperation()
 		if currentOperation.opcode == OpcodeErr {
-			return output
+			return c.output
 		}
-		outputMaybe, next := performOperation(ops, currentOperation, inputVal)
-		if outputMaybe != nil {
-			output = *outputMaybe
-		}
-		fmt.Println("\tnext destination:", currentOperation.nextInstruction)
-
-		c.functionPointer = memoryAddress(next)
+		c.performOperation(currentOperation)
 	}
-	return output
+	return c.output
 }
 
 func (c *Computer) GetUserInput(input int) {
-	c.UserInput = input
+	log.Printf("== getting user input: %v, past: %v\n", input, c.UserInput)
+	c.UserInput = append(c.UserInput, input)
+}
+
+func (c *Computer) getInput() int {
+	log.Printf("reading stored input")
+	var currentInput int
+	if len(c.UserInput) == 0 {
+		log.Fatal("could not get user input!")
+		return -1
+	} else if len(c.UserInput) == 1 {
+		currentInput = c.UserInput[0]
+		c.UserInput = []int{}
+	} else {
+		currentInput = c.UserInput[0]
+		c.UserInput = c.UserInput[1:]
+	}
+	return currentInput
 }
 
 func (io *IO) store(value, target int) {
@@ -66,7 +75,7 @@ func (io *IO) read(target int) int {
 }
 
 func (c *Computer) getCurrentOperation() Operation {
-	return ParseOperation(c.Program.data, c.functionPointer)
+	return ParseOperation(c.Program.data, *c.functionPointer)
 }
 
 func ParseOperation(opcodes []int, address memoryAddress) Operation {
@@ -109,67 +118,63 @@ func ParseOperation(opcodes []int, address memoryAddress) Operation {
 	return op
 }
 
-func performOperation(instructions []int, op Operation, input int) (*int, int) {
+func (c *Computer) performOperation(op Operation) {
 	immediateA := nthdigit(op.encoded, 2)
 	immediateB := nthdigit(op.encoded, 3)
 
 	var paramA, paramB int
 	if immediateA == 1 {
-		fmt.Println("!")
 		paramA = op.params[0]
 	} else {
-		fmt.Println("!!!")
-		paramA = instructions[op.params[0]]
+		paramA = c.Program.read(op.params[0])
 	}
 
 	if len(op.params) > 1 {
 		if immediateB == 1 {
 			paramB = op.params[1]
 		} else {
-			paramB = instructions[op.params[1]]
+			paramB = c.Program.read(op.params[1])
 		}
 	}
 
 	switch op.opcode {
 	case OpcodeAdd:
-		instructions[op.params[2]] = paramA + paramB
+		combined := paramA + paramB
+		c.Program.store(combined, op.params[2])
 	case OpcodeMultiply:
-		instructions[op.params[2]] = paramA * paramB
+		combined := paramA * paramB
+		c.Program.store(combined, op.params[2])
 	case OpcodeSave:
-		instructions[op.params[0]] = input
+		c.Program.store(c.getInput(), op.params[0])
 	case OpcodeJIT:
-		log.Printf("\t====Jumping to %v if true! %v\n", paramB, paramA)
 		if paramA != 0 {
-			op.nextInstruction = paramB
+			*c.functionPointer = memoryAddress(paramB)
+			return
 		}
 	case OpcodeJIF:
-		log.Printf("\t====Jumping to %v if false! %v\n", paramB, paramA)
 		if paramA == 0 {
-			op.nextInstruction = paramB
-			fmt.Println("\t\t false!", op)
+			*c.functionPointer = memoryAddress(paramB)
+			return
 		}
 	case OpcodeLT:
 		if paramA < paramB {
-			instructions[op.params[2]] = 1
+			c.Program.store(1, op.params[2])
 		} else {
-			instructions[op.params[2]] = 0
+			c.Program.store(0, op.params[2])
 		}
 	case OpcodeEq:
 		if paramA == paramB {
-			instructions[op.params[2]] = 1
+			c.Program.store(1, op.params[2])
 		} else {
-			instructions[op.params[2]] = 0
+			c.Program.store(0, op.params[2])
 		}
 	case OpcodeOutput:
-		fmt.Println("aaa", paramA)
-
-		fmt.Println("Output of print command: ", paramA) //instructions[op.params[0]])
-		return &paramA, op.nextInstruction
-		//return &instructions[op.params[0]], op.nextInstruction
+		fmt.Println("Output of print command: ", paramA)
+		c.output = paramA
 	default:
 		log.Fatal("Unsupported opcode!")
 	}
-	return nil, op.nextInstruction
+	*c.functionPointer = memoryAddress(op.nextInstruction)
 }
 
 func convertRawInput(input string) []int {
