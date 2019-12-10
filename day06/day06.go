@@ -13,10 +13,10 @@ type OrbitMap struct {
 }
 
 type Orbitter struct {
-	id string
+	id                                   string
 	directOrbitCount, indirectOrbitCount int
-	indirect []*Orbitter
-	parent *Orbitter
+	indirect                             []*Orbitter
+	parent                               *Orbitter
 }
 
 func (o *Orbitter) ToString() string {
@@ -54,7 +54,7 @@ func ExtractCOMObjects(orbits *OrbitMap, gravityMapping string) {
 			id:                 idCom,
 			directOrbitCount:   0,
 			indirectOrbitCount: 0,
-			indirect: []*Orbitter{},
+			indirect:           []*Orbitter{},
 			parent:             nil,
 		}
 		orbits.Orbits[com.id] = com
@@ -63,23 +63,23 @@ func ExtractCOMObjects(orbits *OrbitMap, gravityMapping string) {
 	}
 	if _, ok := orbits.Orbits[idOrbitter]; !ok {
 		orbitter = &Orbitter{
-			id:                	idOrbitter,
+			id:                 idOrbitter,
 			directOrbitCount:   com.directOrbitCount + 1,
 			indirectOrbitCount: com.directOrbitCount,
-			indirect: 			[]*Orbitter{},
+			indirect:           []*Orbitter{},
 			parent:             com,
 		}
 		orbitter.indirect = buildIndirect(orbitter.parent)
 		orbits.Orbits[orbitter.id] = orbitter
 	} else {
 		orbitter = orbits.Orbits[idOrbitter]
-		orbitter.directOrbitCount= com.directOrbitCount + 1
+		orbitter.directOrbitCount = com.directOrbitCount + 1
 		orbitter.indirectOrbitCount = com.directOrbitCount
 		orbitter.parent = com
 		//orbitter.indirect = buildIndirect(orbitter.parent)
 		orbits.Orbits[orbitter.id] = orbitter
 	}
-	//buildIndirectList(orbitter, com)
+	buildIndirectList(orbitter, com)
 }
 
 func (o *OrbitMap) Parse(gravityMapping string) {
@@ -109,7 +109,7 @@ func (o *OrbitMap) ToString() string {
 func Solve(input io.Reader) int {
 	scanner := bufio.NewScanner(input)
 	scanner.Split(bufio.ScanLines)
-	orbitMap := &OrbitMap{Orbits:make(map[string]*Orbitter)}
+	orbitMap := &OrbitMap{Orbits: make(map[string]*Orbitter)}
 	for scanner.Scan() {
 		orbitMap.Parse(scanner.Text())
 	}
