@@ -2,13 +2,14 @@ package day06_test
 
 import (
 	"fmt"
-	"github.com/jklapacz/aoc/day06"
 	"strings"
 	"testing"
+
+	"github.com/jklapacz/aoc/day06"
 )
 
 func TestOrbitMap_Parse(t *testing.T) {
-	om := &day06.OrbitMap{Orbits:make(map[string]*day06.Orbitter)}
+	om := &day06.OrbitMap{Orbits: make(map[string]*day06.Orbitter)}
 	input := "COM)B"
 	om.Parse(input)
 	for _, orbitter := range om.Orbits {

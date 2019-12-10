@@ -2,62 +2,63 @@ package day05
 
 import (
 	"fmt"
-	"github.com/jklapacz/aoc/day02"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/jklapacz/aoc/day02"
 )
 
 type Operation struct {
-	opcode day02.Opcode
-	encoded int
-	output int
-	params []int
+	opcode          day02.Opcode
+	encoded         int
+	output          int
+	params          []int
 	nextInstruction int
 }
 
 var OpLengths = map[day02.Opcode]int{
-	day02.OpcodeAdd: 4,
+	day02.OpcodeAdd:      4,
 	day02.OpcodeMultiply: 4,
-	day02.OpcodeSave: 2,
-	day02.OpcodeOutput: 2,
-	day02.OpcodeJIT: 3,
-	day02.OpcodeJIF: 3,
-	day02.OpcodeLT: 4,
-	day02.OpcodeEq: 4,
+	day02.OpcodeSave:     2,
+	day02.OpcodeOutput:   2,
+	day02.OpcodeJIT:      3,
+	day02.OpcodeJIF:      3,
+	day02.OpcodeLT:       4,
+	day02.OpcodeEq:       4,
 }
 
-func ParseOperation(opcodes []int, instructionIdx int) Operation{
+func ParseOperation(opcodes []int, instructionIdx int) Operation {
 	encodedOp := opcodes[instructionIdx]
 	//fmt.Println("parsing operation at ", instructionIdx, encodedOp)
 	op := Operation{opcode: decodeOp(encodedOp), encoded: encodedOp}
 	switch op.opcode {
 	case day02.OpcodeAdd:
 		op.output = opcodes[instructionIdx+3]
-		op.params = opcodes[instructionIdx+1:instructionIdx+4]
+		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeMultiply:
 		op.output = opcodes[instructionIdx+3]
-		op.params = opcodes[instructionIdx+1:instructionIdx+4]
+		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeOutput:
 		op.output = -1
-		op.params = opcodes[instructionIdx+1:instructionIdx+2]
+		op.params = opcodes[instructionIdx+1 : instructionIdx+2]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeSave:
-		op.params= opcodes[instructionIdx+1:instructionIdx+2]
+		op.params = opcodes[instructionIdx+1 : instructionIdx+2]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeJIT:
-		op.params= opcodes[instructionIdx+1:instructionIdx+3]
+		op.params = opcodes[instructionIdx+1 : instructionIdx+3]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeJIF:
-		op.params= opcodes[instructionIdx+1:instructionIdx+3]
+		op.params = opcodes[instructionIdx+1 : instructionIdx+3]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeLT:
-		op.params = opcodes[instructionIdx+1:instructionIdx+4]
+		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeEq:
-		op.params = opcodes[instructionIdx+1:instructionIdx+4]
+		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case day02.OpcodeErr:
 		fmt.Println("\t== failing gracefully")
@@ -69,7 +70,7 @@ func ParseOperation(opcodes []int, instructionIdx int) Operation{
 
 func decodeOp(encoded int) day02.Opcode {
 	tens := nthdigit(encoded, 1)
-	ones:= nthdigit(encoded, 0)
+	ones := nthdigit(encoded, 0)
 	if tens == 9 && ones == 9 {
 		return day02.OpcodeErr
 	}
@@ -161,7 +162,7 @@ func performOperation(instructions []int, op Operation, input int) (*int, int) {
 	case day02.OpcodeOutput:
 		fmt.Println("aaa", paramA)
 
-		fmt.Println("Output of print command: ", paramA)//instructions[op.params[0]])
+		fmt.Println("Output of print command: ", paramA) //instructions[op.params[0]])
 		return &paramA, op.nextInstruction
 		//return &instructions[op.params[0]], op.nextInstruction
 	default:
@@ -174,8 +175,6 @@ func nthdigit(x, n int) int {
 	powersof10 := []int{1, 10, 100, 1000, 10000}
 	return ((x / powersof10[n]) % 10)
 }
-
-
 
 func convertRawInput(input string) []int {
 	ops := strings.Split(input, ",")
