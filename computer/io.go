@@ -1,5 +1,7 @@
 package computer
 
+import "fmt"
+
 type UserIO struct {
 	Input, Output chan int
 }
@@ -9,12 +11,12 @@ func InitIO(inputIo, outputIo chan int) *UserIO {
 	if inputIo != nil {
 		input = inputIo
 	} else {
-		input = make(chan int)
+		input = make(chan int, 2)
 	}
 	if outputIo != nil {
 		output = outputIo
 	} else {
-		output = make(chan int)
+		output = make(chan int, 2)
 	}
 
 	return &UserIO{
@@ -31,5 +33,6 @@ func (io *UserIO) Read() int {
 }
 
 func (io *UserIO) Write(input int) {
+	fmt.Printf("=== going to send %v to output\n", input)
 	io.Output <- input
 }
