@@ -42,5 +42,6 @@ func TestImage_Decode(t *testing.T) {
 	input := "0222112222120000"
 	i := image.CreateImage(input, 2, 2)
 	assert.Equal(t, image.Pixels{0, 1, 1, 0}, i.Decode())
+	i.Print()
 	i.ToPNG()
 }

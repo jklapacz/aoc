@@ -109,7 +109,6 @@ func CreateImage(input string, width, height int) *Image {
 }
 
 func (i *Image) Decode() Pixels {
-	fmt.Println("!!", i.width, i.height)
 	var currentPixel int
 	for xIdx := 0; xIdx < i.width; xIdx++ {
 		for yIdx := 0; yIdx < i.height; yIdx++ {
@@ -142,7 +141,12 @@ func (i *Image) DecodeLayersAt(pixel int) int {
 
 func (i *Image) Print() {
 	var currentPixel int
+	for x := 0; x < i.width+2; x++ {
+		fmt.Printf("-")
+	}
+	fmt.Printf("\n")
 	for y := 0; y < i.height; y++ {
+		fmt.Printf("|")
 		for x := 0; x < i.width; x++ {
 			if i.decoded[currentPixel] == 0 {
 				fmt.Printf("#")
@@ -153,8 +157,12 @@ func (i *Image) Print() {
 			currentPixel++
 
 		}
-		fmt.Printf("\n")
+		fmt.Printf("|\n")
 	}
+	for x := 0; x < i.width+2; x++ {
+		fmt.Printf("-")
+	}
+	fmt.Printf("\n")
 
 }
 
