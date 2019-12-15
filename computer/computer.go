@@ -1,6 +1,7 @@
 package computer
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -14,42 +15,63 @@ type IO struct {
 type memoryAddress int
 
 type Computer struct {
-	Program         *IO
-	UserInput       []int
-	functionPointer *memoryAddress
-	output          int
+	Program          *IO
+	UserInput        []int
+	UserInputStreams *UserIO
+	functionPointer  *memoryAddress
+	output           int
+	Interrupt        chan int
 }
 
-func CreateComputer(input string) *Computer {
+func CreateComputer(input string, userInput, userOutput chan int) *Computer {
 	programData := &IO{convertRawInput(input)}
 	startAddress := memoryAddress(0)
-	c := &Computer{Program: programData, UserInput: []int{}, functionPointer: &startAddress}
-	return c
+	interrupt := make(chan int, 2)
+	return &Computer{
+		Program:          programData,
+		UserInput:        []int{},
+		functionPointer:  &startAddress,
+		UserInputStreams: InitIO(userInput, userOutput),
+		Interrupt:        interrupt,
+	}
 }
 
 // RunProgram runs the computer and returns the output
-func (c *Computer) RunProgram() int {
+func (c *Computer) RunProgram() {
 	for {
 		currentOperation := c.getCurrentOperation()
 		if currentOperation.opcode == OpcodeErr {
-			return c.output
+			c.Interrupt <- c.output
+			return
 		}
 		c.performOperation(currentOperation)
 	}
-	return c.output
+}
+
+func ReadFromComputer(c *Computer) (int, error) {
+	select {
+	case computerOutput := <-c.UserInputStreams.Output:
+		return computerOutput, nil
+	case output := <-c.Interrupt:
+		fmt.Println("beefcake!")
+		return output, errors.New("!!")
+	}
+}
+
+func WriteToComputer(c *Computer, userInput int) {
+	c.UserInputStreams.Input <- userInput
 }
 
 func (c *Computer) GetUserInput(input int) {
-	log.Printf("== getting user input: %v, past: %v\n", input, c.UserInput)
+	//log.Printf("== getting user input: %v, past: %v\n", input, c.UserInput)
 	c.UserInput = append(c.UserInput, input)
 }
 
 func (c *Computer) getInput() int {
-	log.Printf("reading stored input")
+	//log.Printf("reading stored input")
 	var currentInput int
 	if len(c.UserInput) == 0 {
-		log.Fatal("could not get user input!")
-		return -1
+		return c.UserInputStreams.Read()
 	} else if len(c.UserInput) == 1 {
 		currentInput = c.UserInput[0]
 		c.UserInput = []int{}
@@ -111,6 +133,7 @@ func ParseOperation(opcodes []int, address memoryAddress) Operation {
 		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 	case OpcodeErr:
+		//fmt.Printf("\t== at address %v", instructionIdx)
 		fmt.Println("\t== failing gracefully")
 	default:
 		log.Fatal("unknown opcode", op.opcode)
@@ -169,8 +192,11 @@ func (c *Computer) performOperation(op Operation) {
 			c.Program.store(0, op.params[2])
 		}
 	case OpcodeOutput:
-		fmt.Println("Output of print command: ", paramA)
+		//fmt.Printf("\t=== at instruction: %v", *c.functionPointer)
+		//fmt.Printf("\t=== next instruction: %v", op.nextInstruction)
+		//fmt.Println("\t Output of print command: ", paramA)
 		c.output = paramA
+		c.UserInputStreams.Write(paramA)
 	default:
 		log.Fatal("Unsupported opcode!")
 	}

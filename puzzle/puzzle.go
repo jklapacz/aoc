@@ -45,3 +45,10 @@ func (p *Puzzle) DumpContents() {
 		fmt.Println(p.Instance.Text())
 	}
 }
+
+func (p *Puzzle) ToString() string {
+	for p.Instance.Scan() {
+		return p.Instance.Text()
+	}
+	return ""
+}
