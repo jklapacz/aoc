@@ -96,6 +96,7 @@ func RunComputer(input string, inputVal int) int {
 		}
 		//fmt.Println("== compute loop", currentOperation, instrOffset)
 		fmt.Println("\tnext destination:", currentOperation.nextInstruction)
+		fmt.Println("\tnext destination:", next)
 
 		instructionIdx = next
 	}
@@ -131,8 +132,10 @@ func performOperation(instructions []int, op Operation, input int) (*int, int) {
 
 	switch op.opcode {
 	case day02.OpcodeAdd:
+		log.Printf("!! writing to: %v\n", op.params[2])
 		instructions[op.params[2]] = paramA + paramB
 	case day02.OpcodeMultiply:
+		log.Printf("!! writing to: %v\n", op.params[2])
 		instructions[op.params[2]] = paramA * paramB
 	case day02.OpcodeSave:
 		instructions[op.params[0]] = input

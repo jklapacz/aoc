@@ -2,16 +2,11 @@ package day07_test
 
 import (
 	"fmt"
-	"runtime"
 	"testing"
 
 	"github.com/jklapacz/aoc/computer"
 	"github.com/stretchr/testify/assert"
 )
-
-func init() {
-	runtime.GOMAXPROCS(1)
-}
 
 type amplifier struct {
 	computer       *computer.Computer
@@ -20,16 +15,6 @@ type amplifier struct {
 }
 
 func runScenario(input string, phases []int, inputSetting int) int {
-	//outputA := computer.ReadFromComputer(amplifierA.computer)
-
-	//amplifierB := createAmplifier(input, phases[1], outputA)
-	//outputB := computer.ReadFromComputer(amplifierB.computer)
-
-	//amplifierC := createAmplifier(input, phases[2], outputB)
-	//outputC := computer.ReadFromComputer(amplifierC.computer)
-
-	//amplifierD := createAmplifier(input, phases[3], outputC)
-
 	var ampAInput int
 	amplifierA := createChainedAmplifier(input, phases[0], nil, nil)
 	amplifierB := createChainedAmplifier(input, phases[1], amplifierA, nil)
@@ -72,16 +57,7 @@ func createChainedAmplifier(input string, phaseSetting int, inputAmp, outputAmp 
 		newAmpOutputChan = outputAmp.computer.UserInputStreams.Input
 	}
 
-	ampComputer := computer.CreateComputer(input, newAmpInputChan, newAmpOutputChan)
-	computer.WriteToComputer(ampComputer, phaseSetting)
-	feedbackLoopMode := phaseSetting > 4 && phaseSetting <= 9
-	return &amplifier{computer: ampComputer, next: nil, inFeedbackLoop: feedbackLoopMode}
-}
-
-func createAmplifier(input string, phaseSetting, instruction int) *amplifier {
-	ampComputer := computer.CreateComputer(input, nil, nil)
-	ampComputer.GetUserInput(phaseSetting)
-	ampComputer.GetUserInput(instruction)
+	ampComputer := computer.CreateComputer(input, newAmpInputChan, newAmpOutputChan, phaseSetting)
 	feedbackLoopMode := phaseSetting > 4 && phaseSetting <= 9
 	return &amplifier{computer: ampComputer, next: nil, inFeedbackLoop: feedbackLoopMode}
 }
