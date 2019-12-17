@@ -1,7 +1,10 @@
 package computer
 
 import (
+	"io"
+	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -22,12 +25,19 @@ type Computer struct {
 	output           int
 	Interrupt        chan int
 	relative         int
+	Trace            *log.Logger
 }
 
 func CreateComputer(input string, userInput, userOutput chan int, config ...int) *Computer {
 	program := loadProgram(input)
 	startAddress := memoryAddress(0)
 	interrupt := make(chan int, 2)
+	var logger io.Writer
+	if os.Getenv("DEBUG") == "true" {
+		logger = os.Stdout
+	} else {
+		logger = ioutil.Discard
+	}
 	return &Computer{
 		Program:          program,
 		config:           config,
@@ -35,6 +45,7 @@ func CreateComputer(input string, userInput, userOutput chan int, config ...int)
 		UserInputStreams: InitIO(userInput, userOutput),
 		Interrupt:        interrupt,
 		relative:         0,
+		Trace:            log.New(logger, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile),
 	}
 }
 

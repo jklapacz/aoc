@@ -70,15 +70,15 @@ type operable interface {
 func (c *Computer) inputValueForPosition(op Operation, pos, paramIdx int) int {
 	val := nthdigit(op.encoded, pos)
 	if val == 1 {
-		log.Printf("In immediate mode\n")
+		c.Trace.Printf("In immediate mode\n")
 		return op.params[paramIdx] // immediate mode
 	} else if val == 2 {
 		relativeOffset := c.relative + op.params[paramIdx]
-		log.Printf("In relative mode\n")
+		c.Trace.Printf("In relative mode\n")
 		return c.Program.read(relativeOffset) // relative offset
 	} else {
-		log.Printf("In positional mode\n")
-		log.Printf("\t getting value at %v\n", op.params[paramIdx])
+		c.Trace.Printf("In positional mode\n")
+		c.Trace.Printf("\t getting value at %v\n", op.params[paramIdx])
 		return c.Program.read(op.params[paramIdx]) // positional mode
 	}
 }
@@ -91,8 +91,8 @@ func (c *Computer) inputForParam(param string, op Operation) int {
 		return c.inputValueForPosition(op, 3, 1)
 	case "c":
 		retVal := c.inputValueForPosition(op, 4, 2)
-		log.Printf("\t debug program contents: %v\n", c.Program.data)
-		log.Printf("param c value: %v!\n", retVal)
+		c.Trace.Printf("\t debug program contents: %v\n", c.Program.data)
+		c.Trace.Printf("param c value: %v!\n", retVal)
 		return retVal
 	default:
 		return -1
@@ -104,8 +104,8 @@ func opAdd(op *Operation) func(c *Computer) {
 		inputs := getTwoInputs(op, c)
 		result := inputs[0] + inputs[1]
 		output := op.params[2]
-		log.Printf("!! writing to: %v\n", output)
-		log.Printf("!! op params: %v\n", op.params)
+		c.Trace.Printf("!! writing to: %v\n", output)
+		c.Trace.Printf("!! op params: %v\n", op.params)
 		c.Program.store(result, output)
 	}
 	return exec
@@ -182,11 +182,13 @@ func getTwoInputs(op *Operation, c *Computer) []int {
 }
 
 func (c *Computer) getCurrentOperation() *Operation {
-	return ParseOperation(c.Program.data, *c.functionPointer)
+	return ParseOperation(c)
 }
 
-func ParseOperation(opcodes []int, address memoryAddress) *Operation {
-	log.Printf("\tcurrently at address: %v\n", address)
+func ParseOperation(c *Computer) *Operation {
+	opcodes := c.Program.data
+	address := *c.functionPointer
+	c.Trace.Printf("\tcurrently at address: %v\n", address)
 	instructionIdx := int(address)
 	encodedOp := opcodes[instructionIdx]
 	op := &Operation{opcode: Decode(encodedOp), encoded: encodedOp}
@@ -227,7 +229,7 @@ func ParseOperation(opcodes []int, address memoryAddress) *Operation {
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
 		op.exec = opEq(op)
 	case OpcodeErr:
-		log.Printf("\t !! received halt code\n")
+		c.Trace.Printf("\t !! received halt code\n")
 	default:
 		log.Fatal("unknown opcode", op.opcode)
 	}
