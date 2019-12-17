@@ -57,6 +57,7 @@ type Operation struct {
 	output          int
 	params          []int
 	nextInstruction int
+	exec            func(c *Computer)
 }
 
 type opParam struct {
@@ -98,15 +99,9 @@ func (c *Computer) inputForParam(param string, op Operation) int {
 	}
 }
 
-func (c *Computer) opAdd(op Operation) func() {
-	getInputs := func() []int {
-		var inputs []int
-		inputs = append(inputs, c.inputForParam("a", op))
-		inputs = append(inputs, c.inputForParam("b", op))
-		return inputs
-	}
-	exec := func() {
-		inputs := getInputs()
+func opAdd(op *Operation) func(c *Computer) {
+	exec := func(c *Computer) {
+		inputs := getTwoInputs(op, c)
 		result := inputs[0] + inputs[1]
 		output := op.params[2]
 		log.Printf("!! writing to: %v\n", output)
@@ -116,15 +111,9 @@ func (c *Computer) opAdd(op Operation) func() {
 	return exec
 }
 
-func (c *Computer) opMult(op Operation) func() {
-	getInputs := func() []int {
-		var inputs []int
-		inputs = append(inputs, c.inputForParam("a", op))
-		inputs = append(inputs, c.inputForParam("b", op))
-		return inputs
-	}
-	exec := func() {
-		inputs := getInputs()
+func opMult(op *Operation) func(c *Computer) {
+	exec := func(c *Computer) {
+		inputs := getTwoInputs(op, c)
 		result := inputs[0] * inputs[1]
 		output := op.params[2]
 		c.Program.store(result, output)
@@ -132,51 +121,33 @@ func (c *Computer) opMult(op Operation) func() {
 	return exec
 }
 
-func (c *Computer) opSave(op Operation) func() {
-	return func() {
+func opSave(op *Operation) func(c *Computer) {
+	return func(c *Computer) {
 		c.Program.store(c.getInput(), op.params[0])
 	}
 }
 
-func (c *Computer) opJit(op *Operation) func() {
-	getInputs := func() []int {
-		var inputs []int
-		inputs = append(inputs, c.inputForParam("a", *op))
-		inputs = append(inputs, c.inputForParam("b", *op))
-		return inputs
-	}
-	return func() {
-		inputs := getInputs()
+func opJit(op *Operation) func(c *Computer) {
+	return func(c *Computer) {
+		inputs := getTwoInputs(op, c)
 		if inputs[0] != 0 {
 			op.nextInstruction = inputs[1]
 		}
 	}
 }
 
-func (c *Computer) opJif(op *Operation) func() {
-	getInputs := func() []int {
-		var inputs []int
-		inputs = append(inputs, c.inputForParam("a", *op))
-		inputs = append(inputs, c.inputForParam("b", *op))
-		return inputs
-	}
-	return func() {
-		inputs := getInputs()
+func opJif(op *Operation) func(c *Computer) {
+	return func(c *Computer) {
+		inputs := getTwoInputs(op, c)
 		if inputs[0] == 0 {
 			op.nextInstruction = inputs[1]
 		}
 	}
 }
 
-func (c *Computer) opLT(op Operation) func() {
-	getInputs := func() []int {
-		var inputs []int
-		inputs = append(inputs, c.inputForParam("a", op))
-		inputs = append(inputs, c.inputForParam("b", op))
-		return inputs
-	}
-	return func() {
-		inputs := getInputs()
+func opLT(op *Operation) func(c *Computer) {
+	return func(c *Computer) {
+		inputs := getTwoInputs(op, c)
 		if inputs[0] < inputs[1] {
 			c.Program.store(1, op.params[2])
 		} else {
@@ -185,15 +156,9 @@ func (c *Computer) opLT(op Operation) func() {
 	}
 }
 
-func (c *Computer) opEq(op Operation) func() {
-	getInputs := func() []int {
-		var inputs []int
-		inputs = append(inputs, c.inputForParam("a", op))
-		inputs = append(inputs, c.inputForParam("b", op))
-		return inputs
-	}
-	return func() {
-		inputs := getInputs()
+func opEq(op *Operation) func(c *Computer) {
+	return func(c *Computer) {
+		inputs := getTwoInputs(op, c)
 		if inputs[0] == inputs[1] {
 			c.Program.store(1, op.params[2])
 		} else {
@@ -202,45 +167,66 @@ func (c *Computer) opEq(op Operation) func() {
 	}
 }
 
-func (c *Computer) getCurrentOperation() Operation {
+func opOutput(op *Operation) func(c *Computer) {
+	return func(c *Computer) {
+		c.output = c.inputForParam("a", *op)
+		c.UserInputStreams.Write(c.output)
+	}
+}
+
+func getTwoInputs(op *Operation, c *Computer) []int {
+	var inputs []int
+	inputs = append(inputs, c.inputForParam("a", *op))
+	inputs = append(inputs, c.inputForParam("b", *op))
+	return inputs
+}
+
+func (c *Computer) getCurrentOperation() *Operation {
 	return ParseOperation(c.Program.data, *c.functionPointer)
 }
 
-func ParseOperation(opcodes []int, address memoryAddress) Operation {
+func ParseOperation(opcodes []int, address memoryAddress) *Operation {
 	log.Printf("\tcurrently at address: %v\n", address)
 	instructionIdx := int(address)
 	encodedOp := opcodes[instructionIdx]
-	op := Operation{opcode: Decode(encodedOp), encoded: encodedOp}
+	op := &Operation{opcode: Decode(encodedOp), encoded: encodedOp}
 	switch op.opcode {
 	case OpcodeAdd:
 		op.output = opcodes[instructionIdx+3]
 		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+		op.exec = opAdd(op)
 	case OpcodeMultiply:
 		op.output = opcodes[instructionIdx+3]
 		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+		op.exec = opMult(op)
 	case OpcodeOutput:
 		op.output = -1
 		op.params = opcodes[instructionIdx+1 : instructionIdx+2]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+		op.exec = opOutput(op)
 	case OpcodeSave:
 		op.params = opcodes[instructionIdx+1 : instructionIdx+2]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+		op.exec = opSave(op)
 	case OpcodeJIT:
 		op.params = opcodes[instructionIdx+1 : instructionIdx+3]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+		op.exec = opJit(op)
 	case OpcodeJIF:
 		op.params = opcodes[instructionIdx+1 : instructionIdx+3]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+		op.exec = opJif(op)
 	case OpcodeLT:
 		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+		op.exec = opLT(op)
 	case OpcodeEq:
 		op.params = opcodes[instructionIdx+1 : instructionIdx+4]
 		op.nextInstruction = instructionIdx + OpLengths[op.opcode]
+		op.exec = opEq(op)
 	case OpcodeErr:
-		//fmt.Printf("\t== at address %v", instructionIdx)
 		log.Printf("\t !! received halt code\n")
 	default:
 		log.Fatal("unknown opcode", op.opcode)
@@ -248,34 +234,8 @@ func ParseOperation(opcodes []int, address memoryAddress) Operation {
 	return op
 }
 
-func (c *Computer) opOutput(op Operation) func() {
-	return func() {
-		c.output = c.inputForParam("a", op)
-		c.UserInputStreams.Write(c.output)
-	}
-}
-
-func (c *Computer) performOperation(op Operation) {
-	switch op.opcode {
-	case OpcodeAdd:
-		c.opAdd(op)()
-	case OpcodeMultiply:
-		c.opMult(op)()
-	case OpcodeSave:
-		c.opSave(op)()
-	case OpcodeJIT:
-		c.opJit(&op)()
-	case OpcodeJIF:
-		c.opJif(&op)()
-	case OpcodeLT:
-		c.opLT(op)()
-	case OpcodeEq:
-		c.opEq(op)()
-	case OpcodeOutput:
-		c.opOutput(op)()
-	default:
-		log.Fatal("Unsupported opcode!")
-	}
+func (c *Computer) performOperation(op *Operation) {
+	op.exec(c)
 	*c.functionPointer = memoryAddress(op.nextInstruction)
 }
 
