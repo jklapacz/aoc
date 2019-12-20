@@ -41,11 +41,22 @@ func (io *UserIO) Write(input int) {
 	io.Output <- input
 }
 
+func ContinuouslyRead(c *Computer) []int {
+	var outputs []int
+	for {
+		output, err := ReadFromComputer(c)
+		if err != nil {
+			return outputs
+		}
+		outputs = append(outputs, output)
+	}
+}
+
 func ReadFromComputer(c *Computer) (int, error) {
 	select {
 	case computerOutput := <-c.UserInputStreams.Output:
 		return computerOutput, nil
-	case output := <-c.Interrupt:
+	case output, _ := <-c.Interrupt:
 		fmt.Println("beefcake!")
 		return output, errors.New("!!")
 	}

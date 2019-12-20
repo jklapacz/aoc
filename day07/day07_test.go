@@ -2,6 +2,7 @@ package day07_test
 
 import (
 	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/jklapacz/aoc/computer"
@@ -12,6 +13,10 @@ type amplifier struct {
 	computer       *computer.Computer
 	next           *amplifier
 	inFeedbackLoop bool
+}
+
+func init() {
+	runtime.GOMAXPROCS(1)
 }
 
 func runScenario(input string, phases []int, inputSetting int) int {
