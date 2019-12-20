@@ -50,7 +50,7 @@ func CreateComputer(input string, userInput, userOutput chan int, config ...int)
 		Interrupt:        interrupt,
 		relativeOffset:   &relativeOffset,
 		Trace:            log.New(logger, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile),
-		Playback:         log.New(os.Stdout, "PLAYBACK: ", log.Lshortfile),
+		Playback:         log.New(logger, "PLAYBACK: ", log.Lshortfile),
 	}
 }
 

@@ -26,7 +26,7 @@ func TestMemoryAccess(t *testing.T) {
 	value, err = c.ReadFromMemory(1)
 	assert.Equal(t, 999, value)
 
-	assert.Error(t, c.WriteToMemory(4500, 999))
+	assert.Error(t, c.WriteToMemory(450000, 999))
 
 	value, err = c.ReadFromMemory(-1)
 	assert.Error(t, err)
