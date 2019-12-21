@@ -71,30 +71,40 @@ func pointsInLine(origin, topLeft, bottomRight point, m slope) *pointSet {
 			p.y >= topLeft.y &&
 			p.y <= bottomRight.y
 	}
+	// move right
+	fmt.Printf("moving in the following direction: %v, slope: %v\n", slopeDirection(m).toString(), m)
 	points := &pointSet{topLeft: topLeft, bottomRight: bottomRight, origin: origin}
 	if m.run == 0 {
-		for y := topLeft.y; y <= bottomRight.y; y++ {
-			points.add(point{origin.x, y})
+		if slopeDirection(m) == dirUp {
+			for y := origin.y; y >= topLeft.y; y-- {
+				points.add(point{origin.x, y})
+			}
+		} else {
+			for y := origin.y; y <= bottomRight.y; y++ {
+				points.add(point{origin.x, y})
+			}
 		}
 		return points
 	}
 
 	getY := func(x int) int {
-		return int(float64(float64(m.rise)/float64(m.run)) * float64(x))
+		b := float64(origin.y) + (float64(m.rise) / float64(m.run) * float64(origin.x))
+		fmt.Println("b: ", b)
+		return int(float64(float64(m.rise)/float64(m.run))*float64(x)) + int(b)
 	}
 
 	makePoint := func(x int) point {
 		yval := getY(x)
-		delta := origin.y - getY(origin.x)
 		return point{
 			x: x,
-			y: int(yval) + delta,
+			y: yval,
 		}
 	}
 
 	addPossiblePoints := func(x int) {
 		possiblePoint := makePoint(x)
 		if isInBounds(possiblePoint) {
+			fmt.Println("in bounds!")
 			points.add(possiblePoint)
 		}
 	}
@@ -104,20 +114,89 @@ func pointsInLine(origin, topLeft, bottomRight point, m slope) *pointSet {
 		return float64(int64(yval)) == yval
 	}
 
-	// move right
-	for x := origin.x; x <= bottomRight.x; x++ {
-		if pointPossible(x) {
-			addPossiblePoints(x)
+	if m.run > 0 {
+		for x := origin.x; x <= bottomRight.x; x++ {
+			if pointPossible(x) {
+				addPossiblePoints(x)
+			}
 		}
-	}
-
-	for x := origin.x - 1; x >= topLeft.x; x-- {
-		if pointPossible(x) {
-			addPossiblePoints(x)
+	} else {
+		fmt.Println("starting at: ", origin)
+		for x := origin.x; x >= topLeft.x; x-- {
+			fmt.Printf("considering: %v, %v\n", x, getY(x))
+			if pointPossible(x) {
+				fmt.Printf("adding!: %v, %v\n", x, getY(x))
+				addPossiblePoints(x)
+			}
 		}
 	}
 
 	return points
+}
+
+type direction int
+
+const (
+	dirRight direction = iota
+	dirRightDown
+	dirDown
+	dirLeftDown
+	dirLeft
+	dirLeftUp
+	dirUp
+	dirRightUp
+	dirNone
+)
+
+func (d direction) toString() string {
+	switch d {
+	case dirRight:
+		return "right"
+	case dirRightDown:
+		return "right & down"
+	case dirDown:
+		return "down"
+	case dirLeftDown:
+		return "left & down"
+	case dirLeft:
+		return "left"
+	case dirLeftUp:
+		return "left & up"
+	case dirUp:
+		return "up"
+	case dirRightUp:
+		return "right & up"
+	default:
+		return "standstill"
+	}
+}
+
+func slopeDirection(m slope) direction {
+	if m.rise == 0 {
+		if m.run > 0 {
+			return dirRight
+		} else if m.run < 0 {
+			return dirLeft
+		} else {
+			return dirNone
+		}
+	} else if m.rise > 0 {
+		if m.run > 0 {
+			return dirRightDown
+		} else if m.run < 0 {
+			return dirLeftDown
+		} else {
+			return dirDown
+		}
+	} else {
+		if m.run > 0 {
+			return dirRightUp
+		} else if m.run < 0 {
+			return dirLeftUp
+		} else {
+			return dirUp
+		}
+	}
 }
 
 func (ps *pointSet) boundaries() (point, point) {
@@ -144,18 +223,31 @@ func plot(points *pointSet) {
 }
 
 func TestPointLine(t *testing.T) {
-	origin := point{2, 5}
+	origin := point{4, 3}
 	topLeft := point{0, 0}
-	bottomRight := point{10, 10}
-	m := slope{3, 2}
+	bottomRight := point{5, 5}
+	m := slope{1, -4}
 	points := pointsInLine(origin, topLeft, bottomRight, m)
 	plot(points)
-	t.Fatalf("%v", points)
+	//t.Fatalf("%v", points)
+}
+
+func TestTwoPointPlot(t *testing.T) {
+	origin := point{4, 3}
+	topLeft := point{0, 0}
+	bottomRight := point{5, 5}
+	target := point{0, 4}
+	m := calculateSlope(origin, target)
+	assert.Equal(t, slope{1, -4}, m)
+	//m := slope{1, -4}
+	points := pointsInLine(origin, topLeft, bottomRight, m)
+	plot(points)
+	assert.Equal(t, 2, len(points.members))
 }
 
 func TestEnumeration(t *testing.T) {
 	topLeft := point{0, 0}
-	bottomRight := point{2, 2}
+	bottomRight := point{5, 5}
 	g := &Grid{topLeft: topLeft, bottomRight: bottomRight}
 	allPoints := g.enumerate().members
 	for origin := range allPoints {
@@ -164,25 +256,11 @@ func TestEnumeration(t *testing.T) {
 		for target := range pointsWithoutOrigin.members {
 			m := calculateSlope(origin, target)
 			alignedPoints := pointsInLine(origin, g.topLeft, g.bottomRight, m)
-			for p := range alignedPoints.members {
-				pointsWithoutOrigin.remove(p)
-			}
+			//for p := range alignedPoints.members {
+			//	pointsWithoutOrigin.remove(p)
+			//}
 			fmt.Printf("\n\n==============origin: %v, target: %v slope: %v\n", origin, target, m)
 			plot(alignedPoints)
 		}
-	}
-}
-
-func TestSlope(t *testing.T) {
-	type scenario struct {
-		start, end    point
-		expectedSlope slope
-	}
-	scenarios := []scenario{
-		{point{0, 0}, point{3, 1}, slope{1, 3}},
-		{point{0, 0}, point{-3, 1}, slope{1, -3}},
-	}
-	for _, s := range scenarios {
-		assert.Equal(t, s.expectedSlope, calculateSlope(s.start, s.end))
 	}
 }

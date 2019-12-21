@@ -38,9 +38,23 @@ type Slope struct {
 	Rise, Run int
 }
 
+func (s Slope) val() float64 {
+	return float64(s.Rise) / float64(s.Run)
+}
+
 func CalculateSlope(origin, target Point) Slope {
 	return Slope{
 		target.Y - origin.Y,
 		target.X - origin.X,
 	}
+}
+
+func Line(start, end Point) func(x int) Point {
+	m := CalculateSlope(start, end)
+	b := float64(start.X)*m.val() + float64(start.Y)
+	lineFunc := func(x int) Point {
+		yval := float64(x)*m.val() + b
+		return Point{x, int(yval)}
+	}
+	return lineFunc
 }
