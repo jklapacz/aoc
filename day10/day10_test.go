@@ -2,14 +2,30 @@ package day10_test
 
 import (
 	"fmt"
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type Grid struct {
-	points [][]int
+	topLeft, bottomRight point
+}
+
+func iterateThroughGrid(topLeft, bottomRight point, apply func(x, y int)) {
+	for y := topLeft.y; y <= bottomRight.y; y++ {
+		for x := topLeft.x; x <= bottomRight.x; x++ {
+			apply(x, y)
+		}
+	}
+}
+
+func (g *Grid) enumerate() *pointSet {
+	ps := &pointSet{topLeft: g.topLeft, bottomRight: g.bottomRight}
+	apply := func(x, y int) {
+		ps.add(point{x, y})
+	}
+	iterateThroughGrid(g.topLeft, g.bottomRight, apply)
+	return ps
 }
 
 type point struct {
@@ -32,7 +48,7 @@ type pointSet struct {
 	members                      map[point]bool
 }
 
-func (ps pointSet) remove(p point) {
+func (ps *pointSet) remove(p point) {
 	delete(ps.members, p)
 }
 
@@ -55,20 +71,26 @@ func pointsInLine(origin, topLeft, bottomRight point, m slope) *pointSet {
 			p.y >= topLeft.y &&
 			p.y <= bottomRight.y
 	}
+	points := &pointSet{topLeft: topLeft, bottomRight: bottomRight, origin: origin}
 	if m.run == 0 {
-		m.run = math.MaxInt64
+		for y := topLeft.y; y <= bottomRight.y; y++ {
+			points.add(point{origin.x, y})
+		}
+		return points
+	}
+
+	getY := func(x int) int {
+		return int(float64(float64(m.rise)/float64(m.run)) * float64(x))
 	}
 
 	makePoint := func(x int) point {
-		// vertical line
-		yval := float64(float64(m.rise)/float64(m.run)) * float64(x)
+		yval := getY(x)
+		delta := origin.y - getY(origin.x)
 		return point{
 			x: x,
-			y: int(yval),
+			y: int(yval) + delta,
 		}
 	}
-
-	points := &pointSet{topLeft: topLeft, bottomRight: bottomRight}
 
 	addPossiblePoints := func(x int) {
 		possiblePoint := makePoint(x)
@@ -106,14 +128,17 @@ func plot(points *pointSet) {
 	grid := "===== grid ======\n"
 	topLeft, bottomRight := points.boundaries()
 	for y := topLeft.y; y <= bottomRight.y; y++ {
+		grid += "|"
 		for x := topLeft.x; x <= bottomRight.x; x++ {
-			if points.contains(point{x, y}) {
+			if (points.origin == point{x, y}) {
+				grid += fmt.Sprintf("* ")
+			} else if points.contains(point{x, y}) {
 				grid += fmt.Sprintf("+ ")
 			} else {
-				grid += fmt.Sprintf("  ")
+				grid += fmt.Sprintf(". ")
 			}
 		}
-		grid += "\n"
+		grid += "|\n"
 	}
 	fmt.Println(grid)
 }
@@ -126,6 +151,26 @@ func TestPointLine(t *testing.T) {
 	points := pointsInLine(origin, topLeft, bottomRight, m)
 	plot(points)
 	t.Fatalf("%v", points)
+}
+
+func TestEnumeration(t *testing.T) {
+	topLeft := point{0, 0}
+	bottomRight := point{2, 2}
+	g := &Grid{topLeft: topLeft, bottomRight: bottomRight}
+	allPoints := g.enumerate().members
+	for origin := range allPoints {
+		pointsWithoutOrigin := g.enumerate()
+		pointsWithoutOrigin.remove(origin)
+		for target := range pointsWithoutOrigin.members {
+			m := calculateSlope(origin, target)
+			alignedPoints := pointsInLine(origin, g.topLeft, g.bottomRight, m)
+			for p := range alignedPoints.members {
+				pointsWithoutOrigin.remove(p)
+			}
+			fmt.Printf("\n\n==============origin: %v, target: %v slope: %v\n", origin, target, m)
+			plot(alignedPoints)
+		}
+	}
 }
 
 func TestSlope(t *testing.T) {
