@@ -1,13 +1,28 @@
 package point
 
 import (
-	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
 	"math"
+	"os"
 )
 
 type Point struct {
 	X int
 	Y int
+}
+
+var trace *log.Logger
+
+func init() {
+	var logger io.Writer
+	if os.Getenv("DEBUG") == "true" {
+		logger = os.Stdout
+	} else {
+		logger = ioutil.Discard
+	}
+	trace = log.New(logger, "point: ", log.Ltime|log.Lshortfile)
 }
 
 // Manhattan calculates the manhattan distance between Points a and b
@@ -66,22 +81,32 @@ func CreateLine(start, end Point) Line {
 }
 
 func (l Line) LineFunc() func(x int) float64 {
-	fmt.Printf("y = %vx + %v\n", l.m.val(), l.b)
 	return func(x int) float64 {
-		yval := float64(x)*l.m.val() + l.b
-		fmt.Println("y = ", yval)
-		return yval
+		return float64(x)*l.m.val() + l.b
 	}
+}
+
+const floatEqualityThreshold = 1e-9
+
+func almostEqual(a, b float64) bool {
+	absDiff := math.Abs(a - b)
+	trace.Printf("abs difference: between %v and %v %v\n", a, b, absDiff)
+	isClose := absDiff <= floatEqualityThreshold
+	trace.Println("are numbers basically the same?", isClose)
+	return isClose
 }
 
 func (l Line) IsValidPoint(x int) bool {
 	yval := l.LineFunc()(x)
-	return float64(int64(yval)) == yval
+	trace.Printf("checking if %v is valid (%v)\n", x, yval)
+	trace.Printf("rounded value: %v\n", float64(math.Round(yval)))
+	return almostEqual(float64(math.Round(yval)), yval)
 }
 
 func (l Line) CreatePoint(x int) Point {
+	y := int(math.Round(l.LineFunc()(x)))
 	return Point{
 		x,
-		int(l.LineFunc()(x)),
+		y,
 	}
 }

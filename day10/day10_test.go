@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/gookit/color"
 	"github.com/jklapacz/aoc/point"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +24,7 @@ func iterateThroughGrid(topLeft, bottomRight point.Point, apply func(x, y int)) 
 func (g *Grid) enumerate() *pointSet {
 	ps := &pointSet{topLeft: g.topLeft, bottomRight: g.bottomRight}
 	apply := func(x, y int) {
-		ps.add(point.Point{x, y})
+		ps.add(point.Point{X: x, Y: y})
 	}
 	iterateThroughGrid(g.topLeft, g.bottomRight, apply)
 	return ps
@@ -77,18 +78,12 @@ func pointsInLine(origin, target, topLeft, bottomRight point.Point) *pointSet {
 
 	addPossiblePoints := func(x int) {
 		possiblePoint := line.CreatePoint(x)
-		fmt.Println("possible: ", possiblePoint)
+		// fmt.Println("possible: ", possiblePoint)
 		if isInBounds(possiblePoint) {
-			fmt.Println("in bounds!")
+			// fmt.Println("in bounds!")
 			points.add(possiblePoint)
 		}
 	}
-
-	//	pointPossible := func(x int) bool {
-	//		yval := float64(float64(m.Rise)/float64(m.Run)) * float64(x)
-	//		fmt.Println("evaluating yval", yval)
-	//		return float64(int64(yval)) == yval
-	//	}
 
 	if m.Run > 0 {
 		for x := origin.X; x <= bottomRight.X; x++ {
@@ -179,13 +174,15 @@ func (ps *pointSet) boundaries() (point.Point, point.Point) {
 func plot(points *pointSet) {
 	grid := "===== grid ======\n"
 	topLeft, bottomRight := points.boundaries()
+	red := color.FgRed.Render
+	blue := color.FgBlue.Render
 	for y := topLeft.Y; y <= bottomRight.Y; y++ {
 		grid += "|"
 		for x := topLeft.X; x <= bottomRight.X; x++ {
 			if (points.origin == point.Point{x, y}) {
-				grid += fmt.Sprintf("* ")
+				grid += fmt.Sprintf("%s ", blue("+"))
 			} else if points.contains(point.Point{x, y}) {
-				grid += fmt.Sprintf("+ ")
+				grid += fmt.Sprintf("%s ", red("+"))
 			} else {
 				grid += fmt.Sprintf(". ")
 			}
@@ -196,8 +193,8 @@ func plot(points *pointSet) {
 }
 
 func TestPointLine(t *testing.T) {
-	origin := point.Point{4, 5}
-	target := point.Point{1, 4}
+	origin := point.Point{5, 3}
+	target := point.Point{2, 4}
 	topLeft := point.Point{0, 0}
 	bottomRight := point.Point{5, 5}
 	points := pointsInLine(origin, target, topLeft, bottomRight)
@@ -206,10 +203,10 @@ func TestPointLine(t *testing.T) {
 }
 
 func TestTwoPointPlot(t *testing.T) {
-	origin := point.Point{4, 3}
+	origin := point.Point{5, 3}
 	topLeft := point.Point{0, 0}
 	bottomRight := point.Point{5, 5}
-	target := point.Point{0, 4}
+	target := point.Point{2, 4}
 	points := pointsInLine(origin, target, topLeft, bottomRight)
 	plot(points)
 	assert.Equal(t, 2, len(points.members))
@@ -225,9 +222,6 @@ func TestEnumeration(t *testing.T) {
 		pointsWithoutOrigin.remove(origin)
 		for target := range pointsWithoutOrigin.members {
 			alignedPoints := pointsInLine(origin, target, g.topLeft, g.bottomRight)
-			//for p := range alignedPoints.members {
-			//	pointsWithoutOrigin.remove(p)
-			//}
 			fmt.Printf("\n\n==============origin: %v, target: %v \n", origin, target)
 			plot(alignedPoints)
 		}
