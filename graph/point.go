@@ -52,21 +52,6 @@ func FindClosest(origin Point, candidates ...Point) Point {
 	return closestPoint
 }
 
-type Slope struct {
-	Rise, Run int
-}
-
-func (s Slope) val() float64 {
-	return float64(s.Rise) / float64(s.Run)
-}
-
-func CalculateSlope(origin, target Point) Slope {
-	return Slope{
-		target.Y - origin.Y,
-		target.X - origin.X,
-	}
-}
-
 type Line struct {
 	start, end Point
 	m          Slope
