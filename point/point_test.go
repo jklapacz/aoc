@@ -52,10 +52,19 @@ func TestSlope(t *testing.T) {
 func TestLine(t *testing.T) {
 	start := point.Point{0, 0}
 	end := point.Point{3, 3}
-	line := point.Line(start, end)
-	assert.Equal(t, point.Point{2, 2}, line(2))
+	line := point.CreateLine(start, end)
+	y := line.LineFunc()(2)
+	assert.Equal(t, 2.0, y)
+
 	start = point.Point{0, 9}
 	end = point.Point{1, 4}
-	line = point.Line(start, end)
-	assert.Equal(t, point.Point{2, -1}, line(2))
+	line = point.CreateLine(start, end)
+	y = line.LineFunc()(2)
+	assert.Equal(t, -1.0, y)
+
+	start = point.Point{2, 2}
+	end = point.Point{3, 3}
+	line = point.CreateLine(start, end)
+	y = line.LineFunc()(0)
+	assert.Equal(t, 0., y)
 }

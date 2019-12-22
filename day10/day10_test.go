@@ -50,68 +50,55 @@ func (ps *pointSet) contains(p point.Point) bool {
 	return ok
 }
 
-func pointsInLine(origin, topLeft, bottomRight point.Point, m point.Slope) *pointSet {
+func pointsInLine(origin, target, topLeft, bottomRight point.Point) *pointSet {
 	isInBounds := func(p point.Point) bool {
 		return p.X >= topLeft.X &&
 			p.X <= bottomRight.X &&
 			p.Y >= topLeft.Y &&
 			p.Y <= bottomRight.Y
 	}
+	m := point.CalculateSlope(origin, target)
+	line := point.CreateLine(origin, target)
 	// move right
 	fmt.Printf("moving in the following direction: %v, slope: %v\n", slopeDirection(m).toString(), m)
 	points := &pointSet{topLeft: topLeft, bottomRight: bottomRight, origin: origin}
 	if m.Run == 0 {
 		if slopeDirection(m) == dirUp {
 			for y := origin.Y; y >= topLeft.Y; y-- {
-				points.add(point.Point{origin.X, y})
+				points.add(point.Point{X: origin.X, Y: y})
 			}
 		} else {
 			for y := origin.Y; y <= bottomRight.Y; y++ {
-				points.add(point.Point{origin.X, y})
+				points.add(point.Point{X: origin.X, Y: y})
 			}
 		}
 		return points
 	}
 
-	getY := func(x int) int {
-		b := float64(origin.Y) + (float64(m.Rise) / float64(m.Run) * float64(origin.X))
-		fmt.Println("b: ", b)
-		return int(float64(float64(m.Rise)/float64(m.Run))*float64(x)) + int(b)
-	}
-
-	makePoint := func(x int) point.Point {
-		yval := getY(x)
-		return point.Point{
-			X: x,
-			Y: yval,
-		}
-	}
-
 	addPossiblePoints := func(x int) {
-		possiblePoint := makePoint(x)
+		possiblePoint := line.CreatePoint(x)
+		fmt.Println("possible: ", possiblePoint)
 		if isInBounds(possiblePoint) {
 			fmt.Println("in bounds!")
 			points.add(possiblePoint)
 		}
 	}
 
-	pointPossible := func(x int) bool {
-		yval := float64(float64(m.Rise)/float64(m.Run)) * float64(x)
-		return float64(int64(yval)) == yval
-	}
+	//	pointPossible := func(x int) bool {
+	//		yval := float64(float64(m.Rise)/float64(m.Run)) * float64(x)
+	//		fmt.Println("evaluating yval", yval)
+	//		return float64(int64(yval)) == yval
+	//	}
 
 	if m.Run > 0 {
 		for x := origin.X; x <= bottomRight.X; x++ {
-			if pointPossible(x) {
+			if line.IsValidPoint(x) {
 				addPossiblePoints(x)
 			}
 		}
 	} else {
-		fmt.Println("starting at: ", origin)
 		for x := origin.X; x >= topLeft.X; x-- {
-			fmt.Printf("considering: %v, %v\n", x, getY(x))
-			if pointPossible(x) {
-				fmt.Printf("adding!: %v, %v\n", x, getY(x))
+			if line.IsValidPoint(x) {
 				addPossiblePoints(x)
 			}
 		}
@@ -209,13 +196,13 @@ func plot(points *pointSet) {
 }
 
 func TestPointLine(t *testing.T) {
-	origin := point.Point{4, 3}
+	origin := point.Point{4, 5}
+	target := point.Point{1, 4}
 	topLeft := point.Point{0, 0}
 	bottomRight := point.Point{5, 5}
-	m := point.Slope{1, -4}
-	points := pointsInLine(origin, topLeft, bottomRight, m)
+	points := pointsInLine(origin, target, topLeft, bottomRight)
 	plot(points)
-	//t.Fatalf("%v", points)
+	t.Fatalf("%v", points)
 }
 
 func TestTwoPointPlot(t *testing.T) {
@@ -223,10 +210,7 @@ func TestTwoPointPlot(t *testing.T) {
 	topLeft := point.Point{0, 0}
 	bottomRight := point.Point{5, 5}
 	target := point.Point{0, 4}
-	m := point.CalculateSlope(origin, target)
-	assert.Equal(t, point.Slope{1, -4}, m)
-	//m := slope{1, -4}
-	points := pointsInLine(origin, topLeft, bottomRight, m)
+	points := pointsInLine(origin, target, topLeft, bottomRight)
 	plot(points)
 	assert.Equal(t, 2, len(points.members))
 }
@@ -240,12 +224,11 @@ func TestEnumeration(t *testing.T) {
 		pointsWithoutOrigin := g.enumerate()
 		pointsWithoutOrigin.remove(origin)
 		for target := range pointsWithoutOrigin.members {
-			m := point.CalculateSlope(origin, target)
-			alignedPoints := pointsInLine(origin, g.topLeft, g.bottomRight, m)
+			alignedPoints := pointsInLine(origin, target, g.topLeft, g.bottomRight)
 			//for p := range alignedPoints.members {
 			//	pointsWithoutOrigin.remove(p)
 			//}
-			fmt.Printf("\n\n==============origin: %v, target: %v slope: %v\n", origin, target, m)
+			fmt.Printf("\n\n==============origin: %v, target: %v \n", origin, target)
 			plot(alignedPoints)
 		}
 	}

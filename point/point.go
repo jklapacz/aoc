@@ -1,6 +1,9 @@
 package point
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type Point struct {
 	X int
@@ -49,12 +52,36 @@ func CalculateSlope(origin, target Point) Slope {
 	}
 }
 
-func Line(start, end Point) func(x int) Point {
-	m := CalculateSlope(start, end)
-	b := float64(start.X)*m.val() + float64(start.Y)
-	lineFunc := func(x int) Point {
-		yval := float64(x)*m.val() + b
-		return Point{x, int(yval)}
+type Line struct {
+	start, end Point
+	m          Slope
+	b          float64
+}
+
+func CreateLine(start, end Point) Line {
+	line := Line{start: start, end: end}
+	line.m = CalculateSlope(start, end)
+	line.b = float64(start.Y) - float64(start.X)*line.m.val()
+	return line
+}
+
+func (l Line) LineFunc() func(x int) float64 {
+	fmt.Printf("y = %vx + %v\n", l.m.val(), l.b)
+	return func(x int) float64 {
+		yval := float64(x)*l.m.val() + l.b
+		fmt.Println("y = ", yval)
+		return yval
 	}
-	return lineFunc
+}
+
+func (l Line) IsValidPoint(x int) bool {
+	yval := l.LineFunc()(x)
+	return float64(int64(yval)) == yval
+}
+
+func (l Line) CreatePoint(x int) Point {
+	return Point{
+		x,
+		int(l.LineFunc()(x)),
+	}
 }
