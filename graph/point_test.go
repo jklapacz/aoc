@@ -1,9 +1,9 @@
-package point_test
+package graph_test
 
 import (
 	"testing"
 
-	"github.com/jklapacz/aoc/point"
+	point "github.com/jklapacz/aoc/graph"
 	"github.com/stretchr/testify/assert"
 )
 

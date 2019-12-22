@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gookit/color"
-	"github.com/jklapacz/aoc/point"
+	point "github.com/jklapacz/aoc/graph"
 	"github.com/stretchr/testify/assert"
 )
 
