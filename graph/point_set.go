@@ -4,6 +4,7 @@ type Grid struct {
 	TopLeft, BottomRight Point
 }
 
+// -140, -720
 type PointSet struct {
 	TopLeft, BottomRight, Origin Point
 	Members                      map[Point]bool
