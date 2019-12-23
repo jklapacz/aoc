@@ -52,3 +52,47 @@ func TestLine(t *testing.T) {
 	y = line.LineFunc()(0)
 	assert.Equal(t, 0., y)
 }
+
+func TestCalculateAngle(t *testing.T) {
+	type scenario struct {
+		origin, target point.Point
+		result         float64
+	}
+	scenarios := []scenario{
+		{
+			point.Point{X: 2, Y: 2},
+			point.Point{X: 4, Y: 4},
+			45.,
+		},
+		{
+			point.Point{X: 2, Y: 2},
+			point.Point{X: 1, Y: 3},
+			135.,
+		},
+		{
+			point.Point{X: 2, Y: 2},
+			point.Point{X: 1, Y: 1},
+			225.,
+		},
+		{
+			point.Point{X: 2, Y: 2},
+			point.Point{X: 3, Y: 1},
+			315.,
+		},
+	}
+
+	for _, s := range scenarios {
+		assert.Equal(t, s.result, point.CalculateAngle(s.origin, s.target))
+	}
+}
+
+func TestSortingByAngle(t *testing.T) {
+	origin := point.Point{0, 0}
+	points := []point.Point{{X: 2, Y: 2}, {X: 1, Y: 1}, {X: -1, Y: 4}, {X: 0, Y: -1}}
+
+	point.SortByAngle(origin, points)
+	assert.Equal(t, point.Point{X: 0, Y: -1}, points[0])
+	assert.Equal(t, point.Point{X: 1, Y: 1}, points[1])
+	assert.Equal(t, point.Point{X: 2, Y: 2}, points[2])
+	assert.Equal(t, point.Point{X: -1, Y: 4}, points[3])
+}

@@ -1,5 +1,7 @@
 package graph
 
+import "sort"
+
 type Grid struct {
 	TopLeft, BottomRight Point
 }
@@ -102,4 +104,45 @@ func PointsInLine(origin, target, topLeft, bottomRight Point) *PointSet {
 	}
 
 	return points
+}
+
+type By func(p1, p2 *Point) bool
+
+type pointSorter struct {
+	points []Point
+	by     func(p1, p2 *Point) bool
+}
+
+func (by By) Sort(points []Point) {
+	ps := &pointSorter{
+		points: points,
+		by:     by,
+	}
+	sort.Sort(ps)
+}
+
+func (s *pointSorter) Swap(i, j int) {
+	s.points[i], s.points[j] = s.points[j], s.points[i]
+}
+
+func (s *pointSorter) Len() int {
+	return len(s.points)
+}
+
+func (s *pointSorter) Less(i, j int) bool {
+	return s.by(&s.points[i], &s.points[j])
+}
+
+func SortByAngle(origin Point, points []Point) {
+	angle := func(p1, p2 *Point) bool {
+		angle1 := CalculateAngle(origin, *p1)
+		angle2 := CalculateAngle(origin, *p2)
+		if angle1 == angle2 {
+			distance1 := Manhattan(origin, *p1)
+			distance2 := Manhattan(origin, *p2)
+			return distance1 < distance2
+		}
+		return angle1 < angle2
+	}
+	By(angle).Sort(points)
 }

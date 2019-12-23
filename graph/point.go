@@ -95,3 +95,37 @@ func (l Line) CreatePoint(x int) Point {
 		y,
 	}
 }
+
+/*
+	III   + 270    IV
+        . . | . .
+    +  	. . | . .
+    1   - - 0 - - + 0
+    8   . . | . .
+    0 II. . | . . I
+	       + 90
+*/
+func CalculateAngle(origin, target Point) float64 {
+	dy := float64(target.Y - origin.Y)
+	dx := float64(target.X - origin.X)
+	switch {
+	case dx == 0 && dy < 0:
+		return 0
+	case dx == 0 && dy > 0:
+		return 180
+	case dy == 0 && dx > 0:
+		return 90
+	case dy == 0 && dx < 0:
+		return 270
+	}
+	trace.Printf("%v/%v\n", dy, dx)
+	degrees := rad2deg(math.Atan2(dy, dx))
+	if degrees < 0 {
+		degrees = 360 + degrees
+	}
+	return degrees
+}
+
+func rad2deg(r float64) float64 {
+	return r * (180. / math.Pi)
+}

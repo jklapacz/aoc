@@ -228,6 +228,33 @@ func TestPart1(t *testing.T) {
 	assert.Equal(t, graph.Point{X: 3, Y: 4}, ExploreUniverse(universe))
 }
 
+func Extract(asteroids *AsteroidMap, exclude ...graph.Point) []graph.Point {
+	amap := duplicate(asteroids)
+	for _, p := range exclude {
+		amap.Remove(p)
+	}
+	var points []graph.Point
+	for point := range amap.Members {
+		points = append(points, point)
+	}
+	return points
+}
+
+func TestPart2(t *testing.T) {
+	input := `.###.
+.....
+.....
+.....
+`
+	universe := Parse(input)
+	base := ExploreUniverse(universe)
+	assert.Equal(t, graph.Point{X: 2, Y: 0}, base)
+	asteroids := Extract(universe, base)
+	graph.SortByAngle(base, asteroids)
+	assert.Equal(t, 2, len(asteroids))
+	assert.Equal(t, graph.Point{X: 3, Y: 0}, asteroids[0])
+}
+
 // for every asteroids
 //	get every OTHER asteroid #unseen asteroids
 //		get the line between a->oA
