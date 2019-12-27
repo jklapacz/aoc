@@ -93,7 +93,7 @@ func Parse(input string) *AsteroidMap {
 		lines = append(lines, line)
 		lineCount++
 	}
-	fmt.Println(width, lineCount)
+	//fmt.Println(width, lineCount)
 	asteroids.TopLeft = graph.Point{X: 0, Y: 0}
 	asteroids.BottomRight = graph.Point{X: width, Y: lineCount}
 	for y, row := range lines {
@@ -165,12 +165,12 @@ func Explore(origin graph.Point, asteroids *AsteroidMap) int {
 	unseen.Remove(origin)
 	seen := &graph.PointSet{}
 
-	fmt.Println("unseen: ", unseen.Members)
+	//fmt.Println("unseen: ", unseen.Members)
 	for len(unseen.Members) > 0 {
 		for target := range unseen.Members {
 			lineToAsteroid := graph.PointsInLine(origin, target, asteroids.TopLeft, asteroids.BottomRight)
 			var asteroidsInLine []graph.Point
-			fmt.Println("Seen so far", len(seen.Members))
+			//			fmt.Println("Seen so far", len(seen.Members))
 			for point := range lineToAsteroid.Members {
 				if asteroids.Contains(point) && unseen.Contains(point) {
 					unseen.Remove(point)
@@ -241,18 +241,20 @@ func Extract(asteroids *AsteroidMap, exclude ...graph.Point) []graph.Point {
 }
 
 func TestPart2(t *testing.T) {
-	input := `.###.
-.....
-.....
-.....
-`
-	universe := Parse(input)
+	universe := Parse(test4Input)
 	base := ExploreUniverse(universe)
-	assert.Equal(t, graph.Point{X: 2, Y: 0}, base)
+	assert.Equal(t, graph.Point{X: 11, Y: 13}, base)
 	asteroids := Extract(universe, base)
 	graph.SortByAngle(base, asteroids)
-	assert.Equal(t, 2, len(asteroids))
-	assert.Equal(t, graph.Point{X: 3, Y: 0}, asteroids[0])
+	assert.Equal(t, true, len(asteroids) > 200)
+	assert.Equal(t, graph.Point{X: 8, Y: 2}, asteroids[199])
+	universe = Parse(puzzleInput)
+	base = ExploreUniverse(universe)
+	base = graph.Point{X: 3, Y: 4}
+	asteroids = Extract(universe, base)
+	graph.SortByAngle(base, asteroids)
+	assert.Equal(t, true, len(asteroids) > 200)
+	assert.Equal(t, graph.Point{X: 7, Y: 6}, asteroids[199])
 }
 
 // for every asteroids

@@ -1,6 +1,8 @@
 package graph
 
-import "sort"
+import (
+	"sort"
+)
 
 type Grid struct {
 	TopLeft, BottomRight Point
@@ -134,15 +136,83 @@ func (s *pointSorter) Less(i, j int) bool {
 }
 
 func SortByAngle(origin Point, points []Point) {
+	//var laserSorted []Point
+	//seenByAnother := map[Point]bool{}
+	//	pointsToSort := make([]Point, len(points))
+
+	//for len(pointsToSort) > 0 {
+	angles := []float64{}
+	pointSeen := map[Point]struct{}{}
+	angleSet := map[float64][]Point{}
 	angle := func(p1, p2 *Point) bool {
 		angle1 := CalculateAngle(origin, *p1)
 		angle2 := CalculateAngle(origin, *p2)
+		trace.Printf("angle1 (%v) = %v angle2 (%v) = %v\n", *p1, angle1, *p2, angle2)
+		if _, ok := angleSet[angle1]; !ok {
+			angleSet[angle1] = []Point{*p1}
+			angles = append(angles, angle1)
+			pointSeen[*p1] = struct{}{}
+		} else {
+			if _, ok := pointSeen[*p1]; !ok {
+				angleSet[angle1] = append(angleSet[angle1], *p1)
+				pointSeen[*p1] = struct{}{}
+			}
+		}
+		if _, ok := angleSet[angle2]; !ok {
+			angleSet[angle2] = []Point{*p2}
+			angles = append(angles, angle2)
+			pointSeen[*p2] = struct{}{}
+		} else {
+			if _, ok := pointSeen[*p2]; !ok {
+				angleSet[angle2] = append(angleSet[angle2], *p2)
+				pointSeen[*p2] = struct{}{}
+			}
+		}
 		if angle1 == angle2 {
-			distance1 := Manhattan(origin, *p1)
-			distance2 := Manhattan(origin, *p2)
-			return distance1 < distance2
+			angle1 += float64(Manhattan(origin, *p1))
+			angle2 += float64(Manhattan(origin, *p2))
+			//			if angle1 < angle2 {
+			//				seenByAnother[*p1] = true
+			//			} else {
+			//				seenByAnother[*p2] = true
+			//			}
 		}
 		return angle1 < angle2
 	}
 	By(angle).Sort(points)
+	distance := func(p1, p2 *Point) bool {
+		d1 := float64(Manhattan(origin, *p1))
+		d2 := float64(Manhattan(origin, *p2))
+		return d1 < d2
+	}
+
+	for _, as := range angleSet {
+		By(distance).Sort(as)
+	}
+	sort.Float64s(angles)
+	//fmt.Println(angles)
+	//fmt.Println(angleSet)
+	sortedAsteroids := []Point{}
+	for len(sortedAsteroids) != len(points) {
+		for _, currentAngle := range angles {
+			if len(angleSet[currentAngle]) == 0 {
+				continue
+			}
+			sortedAsteroids = append(sortedAsteroids, angleSet[currentAngle][0])
+			angleSet[currentAngle] = angleSet[currentAngle][1:]
+		}
+	}
+	copy(points, sortedAsteroids)
+	//temp := make([]Point, len(pointsToSort))
+	//copy(temp, pointsToSort)
+	//for i, p := range temp {
+	//	if _, ok := seenByAnother[p]; !ok {
+	//		laserSorted = append(laserSorted, p)
+	//		pointsToSort[i] = pointsToSort[len(pointsToSort)-1]
+	//		pointsToSort[len(pointsToSort)-1] = Point{X: 0, Y: 0}
+	//		pointsToSort = pointsToSort[:len(pointsToSort)-1]
+	//		fmt.Println(laserSorted)
+	//	}
+	//}
+	//}
 }

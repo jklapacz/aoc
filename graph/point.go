@@ -110,22 +110,30 @@ func CalculateAngle(origin, target Point) float64 {
 	dx := float64(target.X - origin.X)
 	switch {
 	case dx == 0 && dy < 0:
-		return 0
+		return Deg2rad(0.)
 	case dx == 0 && dy > 0:
-		return 180
+		return Deg2rad(180.)
 	case dy == 0 && dx > 0:
-		return 90
+		return Deg2rad(90.)
 	case dy == 0 && dx < 0:
-		return 270
+		return Deg2rad(270.)
 	}
-	trace.Printf("%v/%v\n", dy, dx)
-	degrees := rad2deg(math.Atan2(dy, dx))
+	//trace.Printf("%v/%v\n", dy, dx)
+	degrees := math.Atan2(dy, dx) + Deg2rad(90.)
+	//degrees = rad2deg(degrees)
+	//degrees := rad2deg(math.Atan2(dy, dx))
 	if degrees < 0 {
-		degrees = 360 + degrees
+		degrees += Deg2rad(360.)
+		//	degrees = 360 + degrees
 	}
+	trace.Printf("%v degrees between %v and %v (origin)\n", degrees, target, origin)
 	return degrees
 }
 
 func rad2deg(r float64) float64 {
 	return r * (180. / math.Pi)
+}
+
+func Deg2rad(d float64) float64 {
+	return d * (math.Pi / 180.)
 }

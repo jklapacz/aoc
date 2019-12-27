@@ -62,37 +62,66 @@ func TestCalculateAngle(t *testing.T) {
 		{
 			point.Point{X: 2, Y: 2},
 			point.Point{X: 4, Y: 4},
-			45.,
-		},
-		{
-			point.Point{X: 2, Y: 2},
-			point.Point{X: 1, Y: 3},
 			135.,
 		},
 		{
 			point.Point{X: 2, Y: 2},
-			point.Point{X: 1, Y: 1},
+			point.Point{X: 1, Y: 3},
 			225.,
 		},
 		{
 			point.Point{X: 2, Y: 2},
-			point.Point{X: 3, Y: 1},
+			point.Point{X: 1, Y: 1},
 			315.,
+		},
+		{
+			point.Point{X: 2, Y: 2},
+			point.Point{X: 3, Y: 1},
+			45.,
 		},
 	}
 
 	for _, s := range scenarios {
-		assert.Equal(t, s.result, point.CalculateAngle(s.origin, s.target))
+		assert.Equal(t, point.Deg2rad(s.result), point.CalculateAngle(s.origin, s.target))
 	}
 }
 
-func TestSortingByAngle(t *testing.T) {
-	origin := point.Point{0, 0}
-	points := []point.Point{{X: 2, Y: 2}, {X: 1, Y: 1}, {X: -1, Y: 4}, {X: 0, Y: -1}}
+/*
+  0 1 2 3 4
+0 . . . 2 6
+1 . . 1 3 .
+2 . . H 4 7
+3 . 5 . . .
+4 . . . . .
+*/
 
-	point.SortByAngle(origin, points)
-	assert.Equal(t, point.Point{X: 0, Y: -1}, points[0])
-	assert.Equal(t, point.Point{X: 1, Y: 1}, points[1])
-	assert.Equal(t, point.Point{X: 2, Y: 2}, points[2])
-	assert.Equal(t, point.Point{X: -1, Y: 4}, points[3])
+func TestSortingByAngle(t *testing.T) {
+	homeBase := point.Point{2, 2}
+	points := []point.Point{
+		{X: 3, Y: 0},
+		{X: 4, Y: 0},
+		{X: 2, Y: 1},
+		{X: 3, Y: 1},
+		{X: 3, Y: 2},
+		{X: 4, Y: 2},
+		{X: 1, Y: 3},
+	}
+	//origin := point.Point{0, 0}
+	//points := []point.Point{{X: 2, Y: 2}, {X: 1, Y: 1}, {X: -1, Y: 4}, {X: 0, Y: -1}}
+	expectedSorted := []point.Point{
+		{X: 2, Y: 1},
+		{X: 3, Y: 0},
+		{X: 3, Y: 1},
+		{X: 3, Y: 2},
+		{X: 1, Y: 3},
+		{X: 4, Y: 0},
+		{X: 4, Y: 2},
+	}
+
+	point.SortByAngle(homeBase, points)
+	assert.Equal(t, expectedSorted, points)
+	//assert.Equal(t, point.Point{X: 0, Y: -1}, points[0])
+	//assert.Equal(t, point.Point{X: 1, Y: 1}, points[1])
+	//assert.Equal(t, point.Point{X: 2, Y: 2}, points[2])
+	//assert.Equal(t, point.Point{X: -1, Y: 4}, points[3])
 }
